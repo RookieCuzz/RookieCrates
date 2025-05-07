@@ -9,19 +9,17 @@ import java.util.Random;
 public class Crate {
 
     String id;
-    //名字
-     String displayName;
+    String displayName;
     //奖品池
 
-     // id
-
     List<CrateLoot> crateLoots;
-
-
-
     private Random random = new Random();
 
-    public CrateLoot drawPrize(Double luckFactor) {
+    public Crate(String id) {
+        this.id = id;
+    }
+
+    private CrateLoot drawPrize(Double luckFactor) {
         double x = 0;
 
         // 稀有奖品的额外权重
@@ -64,7 +62,7 @@ public class Crate {
     }
 
     //打开一次宝箱
-    public  CrateLoot  generateLoot(Player player){
+    public CrateLoot generateLoot(Player player){
         CrateLoot crateLoot = this.drawPrize(100d);
         return crateLoot;
     }
@@ -74,16 +72,17 @@ public class Crate {
         return this;
     }
 
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    public String getDisplayName() { return displayName; }
+    public void setDisplayName(String displayName) { this.displayName = displayName; }
 
     public Crate addLoot(GlobalLoot globalLoot,String id,double weight,int amount){
         CrateLoot crateLoot = new CrateLoot(globalLoot);
         crateLoot.setCrateId(id);
         crateLoot.setWeight(weight);
-
+        crateLoot.setAmount(amount);
+        this.crateLoots.add(crateLoot);
         return this;
-    };
-
+    }
 }

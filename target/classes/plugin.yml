@@ -1,8 +1,0 @@
-name: RookieCrates
-version: '1.0-SNAPSHOT'
-main: com.cuzz.rookieCrates.RookieCrates
-api-version: '1.21'
-commands:
-  RookieCrates:
-    description: "RookieCrates"
-    permission: "RookieCrates.op"

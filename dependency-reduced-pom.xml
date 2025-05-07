@@ -66,13 +66,25 @@
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
-      <version>1.21-R0.1-SNAPSHOT</version>
+      <version>1.21.4-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.github.retrooper</groupId>
-      <artifactId>packetevents-spigot</artifactId>
-      <version>2.7.0</version>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+      <version>3.5.6</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.23</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>4.0.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -81,6 +93,13 @@
       <version>1.0</version>
       <scope>system</scope>
       <systemPath>${project.basedir}/libs/ModelEngine-4.0.7.jar</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>bukkitMybatis</groupId>
+      <artifactId>bukkitMybatis</artifactId>
+      <version>1.0</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/libs/BukkitMybatis-1.0-SNAPSHOT.jar</systemPath>
     </dependency>
   </dependencies>
   <properties>

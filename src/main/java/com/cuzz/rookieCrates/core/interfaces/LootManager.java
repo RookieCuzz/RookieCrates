@@ -11,7 +11,6 @@ public interface LootManager {
     Boolean deleteLoot(String lootid);
 
     //改
-    GlobalLoot editLoot(String lootid);
     GlobalLoot editLoot(GlobalLoot loot);
 
     //增

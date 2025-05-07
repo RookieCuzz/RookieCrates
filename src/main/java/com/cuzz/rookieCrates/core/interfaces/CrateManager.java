@@ -12,10 +12,10 @@ public interface CrateManager {
     Boolean deleteCrate(String crateId);
 
     //增
-    Crate createCrate(String crateId);
+    Crate createCrate(String crateId, String crateName);
 
     //改
-    Crate editCrate(Crate crateId);
+    Crate editCrate(Crate newCrate);
 
     //添加loot到对应的crate
     Crate addLootToCrate(String crateId,String LootId);

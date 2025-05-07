@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<generatorConfiguration>
+
+    <!-- 数据库连接配置 -->
+    <context id="MySQLContext" targetRuntime="MyBatis3">
+        <jdbcConnection driverClass="com.mysql.cj.jdbc.Driver"
+                        connectionURL="jdbc:mysql://103.205.253.165:3306/towncraft"
+                        userId="root"
+                        password="0444438a"/>
+
+        <!-- 生成模型的 Java 类型 -->
+        <javaModelGenerator targetPackage="com.cuzz.rookiecrates.model" targetProject="src/main/java">
+            <property name="enableSubPackages" value="true"/>
+            <property name="trimStrings" value="true"/>
+<!--            控制生成的实体类字段名是否使用数据库中的实际列名。-->
+<!--            <property name="useActualColumnNames" value="true"/>-->
+<!--            设置生成的 Java 文件的编码格式。-->
+<!--            <property name="javaFileEncoding" value="UTF-8"/>-->
+
+        </javaModelGenerator>
+
+        <!-- 生成 Mapper XML 文件 -->
+        <sqlMapGenerator targetPackage="mappers" targetProject="src/main/resources">
+            <property name="enableSubPackages" value="true"/>
+        </sqlMapGenerator>
+
+        <!-- 生成 Java Mapper 接口 -->
+        <javaClientGenerator type="XMLMAPPER" targetPackage="com.cuzz.rookiecrates.mapper" targetProject="src/main/java">
+            <property name="enableSubPackages" value="true"/>
+<!--            如果开启子包支持，MyBatis Generator 会根据表所在的数据库 schema 名或 catalog 名自动创建子包结构。-->
+        </javaClientGenerator>
+
+        <!-- 指定需要生成的表 -->
+        <table tableName="rookie_crate_loot" domainObjectName="DCrateLoot"/>
+        <table tableName="rookie_crate" domainObjectName="DCrate"/>
+    </context>
+
+</generatorConfiguration>

@@ -17,7 +17,15 @@ public class GlobalLoot {
     String description;
 
 
+    public GlobalLoot() {}
 
+    public GlobalLoot(com.cuzz.rookiecrates.model.DCrateLoot dCrateLoot) {
+        this.setId(dCrateLoot.getId());
+        this.setDescription(dCrateLoot.getDescription());
+        this.setDisplayName(dCrateLoot.getName());
+        this.setLores(dCrateLoot.getLores());
+        this.setLootItemStackBase64(dCrateLoot.getLootItemstackBase64());
+    }
 
     public String getId() {
         return id;

@@ -27,26 +27,23 @@ public final class RookieCrates extends JavaPlugin {
 
     private static RookieCrates plugin;
 
-
     @Override
     public void onLoad() {
         PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
         //On Bukkit, calling this here is essential, hence the name "load"
         PacketEvents.getAPI().load();
     }
-    public static RookieCrates getInstance(){
 
+    public static RookieCrates getInstance(){
         PacketEvents.getAPI().init();
 
         Optional<RookieCrates> instance = Optional.of(RookieCrates.plugin);
-        RookieCrates rookieCrates = instance.get();
-        return rookieCrates;
+        return instance.get();
     }
-
 
     public WrapperEntity createEntityPack(Player player){
 
-            PacketEventsAPI api =  PacketEvents.getAPI();// create PacketEventsAPI instance
+            PacketEventsAPI<?> api =  PacketEvents.getAPI();// create PacketEventsAPI instance
             SpigotEntityLibPlatform platform = new SpigotEntityLibPlatform(this);
             APIConfig settings = new APIConfig(PacketEvents.getAPI())
                     .debugMode()
@@ -71,6 +68,7 @@ public final class RookieCrates extends JavaPlugin {
                  setFakeGameMode(player, GameMode.SPECTATOR);
                  return faker_;
     }
+
     public void setFakeHelmet(Player player, ItemStack itemStack) {
 
       //  WrapperPlayServerSetPlayerInventory wrapperPlayServerSetPlayerInventory = new WrapperPlayServerSetPlayerInventory(11, SpigotConversionUtil.fromBukkitItemStack(itemStack));
@@ -92,6 +90,7 @@ public final class RookieCrates extends JavaPlugin {
 //        PacketEvents.getAPI().getPlayerManager().sendPacket(player, wrapperPlayServerPlayerInfoUpdatePack);
 //        player.sendMessage("CCCCCCCCCCCCCC");
     }
+
     @Override
     public void onEnable() {
         // Plugin startup logic
@@ -100,19 +99,21 @@ public final class RookieCrates extends JavaPlugin {
         setupModelEngine();
         this.getCommand("RookieCrates").setExecutor(new Commands());
     }
+
     public ModelEngine getModelEngine() {
         return this.modelEngine;
     }
+
     public void setupModelEngine() {
         this.modelEngine = (ModelEngine)new ModelEngine4();
         getLogger().info("ModelEngine 4 found, using new model engine");
     }
+
     @Override
     public void onDisable() {
         // Plugin shutdown logic
         PacketEvents.getAPI().terminate();
     }
-
 
     public void saveLocation(Player player, String type) {
         Location loc = player.getLocation();
