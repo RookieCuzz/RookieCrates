@@ -234,7 +234,8 @@ public final class CratesGuiController implements Listener {
                 "&7A: &d" + lootModels.modelFor(Rarity.A),
                 "&7S: &6" + lootModels.modelFor(Rarity.S),
                 "&7待机动画: &f" + settings.idleAnimation(),
-                "&7开箱动画: &f" + settings.openAnimation(),
+                "&7单抽动画: &f" + settings.singleOpenAnimation(),
+                "&7七连动画: &f" + settings.sevenOpenAnimation(),
                 "&7点击修改宝箱模型与动画",
                 "&8Loot 配色在 config.yml 修改"));
         inventory.setItem(7, GuiItems.item(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, "&e交互碰撞箱",
@@ -817,14 +818,15 @@ public final class CratesGuiController implements Listener {
     }
 
     private void inputModels(Player player, String crateId, int page) {
-        input(player, "依次输入 宝箱模型|待机动画|开箱动画", value -> {
+        input(player, "依次输入 宝箱模型|待机动画|单抽动画|七连动画", value -> {
             String[] parts = Arrays.stream(value.split("\\|", -1)).map(String::trim).toArray(String[]::new);
-            if (parts.length != 3 || Arrays.stream(parts).anyMatch(String::isEmpty)) {
-                player.sendMessage(GuiItems.color("&c必须提供三个非空值，并用 | 分隔。"));
+            if (parts.length != 4 || Arrays.stream(parts).anyMatch(String::isEmpty)) {
+                player.sendMessage(GuiItems.color("&c必须提供四个非空值，并用 | 分隔。"));
                 openAdminCrate(player, crateId, page);
                 return;
             }
-            mutateCrate(player, crateId, settings -> withModels(settings, parts[0], parts[1], parts[2]));
+            mutateCrate(player, crateId, settings -> withModels(
+                    settings, parts[0], parts[1], parts[2], parts[3]));
         }, () -> openAdminCrate(player, crateId, page));
     }
 
@@ -1167,56 +1169,66 @@ public final class CratesGuiController implements Listener {
     private static CrateSettings withEnabled(CrateSettings s, boolean value) {
         return new CrateSettings(s.id(), s.displayName(), value, s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), s.broadcastS(), s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withDisplayName(CrateSettings s, String value) {
         return new CrateSettings(s.id(), value, s.enabled(), s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), s.broadcastS(), s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withKeyTemplate(CrateSettings s, ItemStack value) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), value,
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), s.broadcastS(), s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withPrices(CrateSettings s, double single, double seven) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), s.keyTemplate(),
                 single, seven, s.pityA(), s.pityS(), s.broadcastS(), s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withPity(CrateSettings s, int pityA, int pityS) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), pityA, pityS, s.broadcastS(), s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withBroadcast(CrateSettings s, boolean value) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), value, s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withSkip(CrateSettings s, boolean value) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), s.broadcastS(), value,
-                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                s.interactionWidth(), s.interactionHeight(), s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withDimensions(CrateSettings s, double width, double height) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), s.broadcastS(), s.skipAllowed(),
-                width, height, s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
+                width, height, s.crateModel(), s.lootModel(), s.idleAnimation(),
+                s.singleOpenAnimation(), s.sevenOpenAnimation());
     }
 
     private static CrateSettings withModels(CrateSettings s, String crateModel,
-                                            String idleAnimation, String openAnimation) {
+                                            String idleAnimation, String singleOpenAnimation,
+                                            String sevenOpenAnimation) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), s.broadcastS(), s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), crateModel, s.lootModel(), idleAnimation, openAnimation);
+                s.interactionWidth(), s.interactionHeight(), crateModel, s.lootModel(), idleAnimation,
+                singleOpenAnimation, sevenOpenAnimation);
     }
 
     private static RewardSettings withRewardItem(RewardSettings r, ItemStack icon, ItemStack item) {

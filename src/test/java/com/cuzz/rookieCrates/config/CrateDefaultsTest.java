@@ -27,7 +27,8 @@ class CrateDefaultsTest {
         assertEquals("loot_pink", defaults.lootModels().modelFor(Rarity.A));
         assertEquals("loot_yellow", defaults.lootModels().modelFor(Rarity.S));
         assertEquals("idle", defaults.idleAnimation());
-        assertEquals("open2", defaults.openAnimation());
+        assertEquals("open1", defaults.singleOpenAnimation());
+        assertEquals("open7", defaults.sevenOpenAnimation());
     }
 
     @Test
@@ -46,7 +47,8 @@ class CrateDefaultsTest {
         config.set("defaults.crate.models.loot-by-rarity.A", "epic_model");
         config.set("defaults.crate.models.loot-by-rarity.S", "legendary_model");
         config.set("defaults.crate.animations.idle", "standby");
-        config.set("defaults.crate.animations.open", "open_event");
+        config.set("defaults.crate.animations.single-open", "open_single_event");
+        config.set("defaults.crate.animations.seven-open", "open_seven_event");
 
         CrateDefaults defaults = CrateDefaults.load(config);
 
@@ -60,7 +62,8 @@ class CrateDefaultsTest {
         assertEquals("epic_model", defaults.lootModels().modelFor(Rarity.A));
         assertEquals("legendary_model", defaults.lootModels().modelFor(Rarity.S));
         assertEquals("standby", defaults.idleAnimation());
-        assertEquals("open_event", defaults.openAnimation());
+        assertEquals("open_single_event", defaults.singleOpenAnimation());
+        assertEquals("open_seven_event", defaults.sevenOpenAnimation());
     }
 
     @Test

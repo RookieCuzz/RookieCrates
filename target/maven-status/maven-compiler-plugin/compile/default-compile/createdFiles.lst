@@ -31,6 +31,7 @@ com\cuzz\rookieCrates\runtime\SceneAbortedException.class
 com\cuzz\rookieCrates\runtime\CrateRuntime.class
 com\cuzz\rookieCrates\gui\api\CratesGuiFacade$CrateSettings.class
 com\cuzz\rookieCrates\domain\RewardItem.class
+com\cuzz\rookieCrates\listener\PhysicalKeyListener.class
 com\cuzz\rookieCrates\service\PitySelector.class
 com\cuzz\rookieCrates\domain\SceneProfile.class
 com\cuzz\rookieCrates\service\OpeningCoordinator$OpeningRejectedException.class

@@ -141,7 +141,8 @@ public interface CratesGuiFacade {
             String crateModel,
             String lootModel,
             String idleAnimation,
-            String openAnimation
+            String singleOpenAnimation,
+            String sevenOpenAnimation
     ) {
         public CrateSettings {
             id = requireText(id, "id");
@@ -160,7 +161,8 @@ public interface CratesGuiFacade {
             crateModel = requireText(crateModel, "crateModel");
             lootModel = requireText(lootModel, "lootModel");
             idleAnimation = requireText(idleAnimation, "idleAnimation");
-            openAnimation = requireText(openAnimation, "openAnimation");
+            singleOpenAnimation = requireText(singleOpenAnimation, "singleOpenAnimation");
+            sevenOpenAnimation = requireText(sevenOpenAnimation, "sevenOpenAnimation");
         }
 
         @Override

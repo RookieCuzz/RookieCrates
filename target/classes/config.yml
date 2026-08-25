@@ -26,7 +26,8 @@ defaults:
         S: loot_yellow
     animations:
       idle: idle
-      open: open2
+      single-open: open1
+      seven-open: open7
 
 legacy-migration:
   import-old-scene: true

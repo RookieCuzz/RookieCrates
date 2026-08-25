@@ -9,8 +9,10 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class PhysicalKeyService {
 
@@ -35,12 +37,20 @@ public final class PhysicalKeyService {
     }
 
     public boolean isKey(ItemStack stack, String crateId) {
+        return crateId(stack).filter(normalize(crateId)::equals).isPresent();
+    }
+
+    /** Returns the normalized crate id carried by a tagged physical key. */
+    public Optional<String> crateId(ItemStack stack) {
         if (stack == null || stack.getType() == Material.AIR || !stack.hasItemMeta()) {
-            return false;
+            return Optional.empty();
         }
         String tagged = stack.getItemMeta().getPersistentDataContainer()
                 .get(crateKey, PersistentDataType.STRING);
-        return normalize(crateId).equals(tagged);
+        if (tagged == null || tagged.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(tagged.trim().toLowerCase(Locale.ROOT));
     }
 
     public int count(PlayerInventory inventory, String crateId) {
@@ -96,7 +106,7 @@ public final class PhysicalKeyService {
     }
 
     private static String normalize(String crateId) {
-        String normalized = Objects.requireNonNull(crateId, "crateId").trim().toLowerCase();
+        String normalized = Objects.requireNonNull(crateId, "crateId").trim().toLowerCase(Locale.ROOT);
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("crateId cannot be blank");
         }

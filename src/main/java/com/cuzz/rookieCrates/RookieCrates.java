@@ -8,6 +8,7 @@ import com.cuzz.rookieCrates.gui.CratesGuiModule;
 import com.cuzz.rookieCrates.gui.api.DefaultCratesGuiFacade;
 import com.cuzz.rookieCrates.key.PhysicalKeyService;
 import com.cuzz.rookieCrates.listener.CrateRuntimeListener;
+import com.cuzz.rookieCrates.listener.PhysicalKeyListener;
 import com.cuzz.rookieCrates.listener.SceneLifecycleListener;
 import com.cuzz.rookieCrates.runtime.CrateRuntime;
 import com.cuzz.rookieCrates.runtime.LootPreviewController;
@@ -139,6 +140,10 @@ public final class RookieCrates extends JavaPlugin {
                 gui.openPlayerCrate(player, interaction.crateId(), 0);
             });
             getServer().getPluginManager().registerEvents(new CrateRuntimeListener(crateRuntime), this);
+            getServer().getPluginManager().registerEvents(new PhysicalKeyListener(
+                    physicalKeys,
+                    (player, crateId) -> gui.openPlayerCrate(player, crateId, 0)
+            ), this);
             getServer().getPluginManager().registerEvents(new SceneLifecycleListener(sceneController), this);
             getServer().getPluginManager().registerEvents(lootPreviewController, this);
 

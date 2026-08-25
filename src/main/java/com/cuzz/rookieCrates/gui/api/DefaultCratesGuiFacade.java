@@ -233,7 +233,8 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                     defaults.interactionWidth(),
                     defaults.interactionHeight(),
                     defaults.idleAnimation(),
-                    defaults.openAnimation()
+                    defaults.singleOpenAnimation(),
+                    defaults.sevenOpenAnimation()
             ));
             return null;
         }), ignored -> "宝箱已创建；请设置钥匙、奖励、场景和模型入口后再启用。" );
@@ -283,7 +284,8 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                     settings.interactionWidth(),
                     settings.interactionHeight(),
                     settings.idleAnimation(),
-                    settings.openAnimation()
+                    settings.singleOpenAnimation(),
+                    settings.sevenOpenAnimation()
             ));
             return null;
         }).thenCompose(ignored -> reloadRuntime()), ignored -> "宝箱设置已保存。" );
@@ -604,7 +606,8 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                 profile == null ? defaults.crateModel() : profile.crateModel(),
                 profile == null ? defaults.lootModels().modelFor(Rarity.C) : profile.lootModel(),
                 crate.idleAnimation(),
-                crate.openAnimation()
+                crate.singleOpenAnimation(),
+                crate.sevenOpenAnimation()
         );
         double totalWeight = snapshot.rewards().stream()
                 .mapToDouble(reward -> reward.definition().weight())

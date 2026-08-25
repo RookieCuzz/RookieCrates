@@ -6,13 +6,13 @@
 
 | 模型 ID | 文件 | 用途 | 必需动画/骨骼 |
 | --- | --- | --- | --- |
-| `default_crate` | `ModelEngine/blueprints/default_crate.bbmodel` | 默认宝箱 | `idle`、`open2` |
-| `loot_white` | `ModelEngine/blueprints/loot_white.bbmodel` | C 级白色奖励展示 | `idle`、`item` |
-| `loot_blue` | `ModelEngine/blueprints/loot_blue.bbmodel` | B 级蓝色奖励展示 | `idle`、`item` |
-| `loot_pink` | `ModelEngine/blueprints/loot_pink.bbmodel` | A 级粉色奖励展示 | `idle`、`item` |
-| `loot_yellow` | `ModelEngine/blueprints/loot_yellow.bbmodel` | S 级黄色奖励展示 | `idle`、`item` |
+| `default_crate` | `ModelEngine/blueprints/default_crate.bbmodel` | 默认宝箱 | `idle`、`open1`、`open7` |
+| `loot_white` | `ModelEngine/blueprints/loot_white.bbmodel` | C 级白色奖励展示 | `idle`、`ih_item` |
+| `loot_blue` | `ModelEngine/blueprints/loot_blue.bbmodel` | B 级蓝色奖励展示 | `idle`、`ih_item` |
+| `loot_pink` | `ModelEngine/blueprints/loot_pink.bbmodel` | A 级粉色奖励展示 | `idle`、`ih_item` |
+| `loot_yellow` | `ModelEngine/blueprints/loot_yellow.bbmodel` | S 级黄色奖励展示 | `idle`、`ih_item` |
 
-`tag_name` 不是必需骨骼。RookieCrates 只强制要求 loot 模型存在 `item` 骨骼；如果模型额外提供带 NAMETAG 行为的 `tag_name`，插件才会显示模型名称标签。
+`ih_item` 中的 `ih_` 是 ModelEngine 4.1 的 HEAD 持物行为前缀，导入后运行时骨骼 ID 为 `item`。RookieCrates 通过该行为的 `HeldItem#setItemProvider` 挂载真实奖励；不要将它改为没有行为的普通空骨骼 `item`。`tag_name` 不是必需骨骼；模型额外提供带 NAMETAG 行为的 `tag_name` 时，插件才会显示名称标签。
 
 ## 原文件名映射
 

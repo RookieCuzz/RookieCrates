@@ -463,7 +463,7 @@ class SQLiteDatabaseTest {
             dao.upsertCrate(new CrateDefinition(
                     "other", "Other", true, new byte[]{2}, 25, 150,
                     10, 80, "default", Rarity.S, true,
-                    1.5, 2.0, "idle", "open2"
+                    1.5, 2.0, "idle", "open1", "open7"
             ));
             dao.createTransaction(new OpenTransaction(
                     basicTransaction, player, "basic", 1,
@@ -506,7 +506,7 @@ class SQLiteDatabaseTest {
         dao.upsertCrate(new CrateDefinition(
                 "basic", "Basic", true, new byte[]{1}, 100, 600,
                 10, 80, "default", Rarity.S, true,
-                1.5, 2.0, "idle", "open2"
+                1.5, 2.0, "idle", "open1", "open7"
         ));
     }
 }

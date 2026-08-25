@@ -16,7 +16,8 @@ public record CrateDefaults(
         String crateModel,
         LootModelPalette lootModels,
         String idleAnimation,
-        String openAnimation
+        String singleOpenAnimation,
+        String sevenOpenAnimation
 ) {
 
     private static final String ROOT = "defaults.crate.";
@@ -33,7 +34,8 @@ public record CrateDefaults(
         crateModel = requireText(crateModel, "defaults.crate.models.crate");
         lootModels = Objects.requireNonNull(lootModels, "lootModels");
         idleAnimation = requireText(idleAnimation, "defaults.crate.animations.idle");
-        openAnimation = requireText(openAnimation, "defaults.crate.animations.open");
+        singleOpenAnimation = requireText(singleOpenAnimation, "defaults.crate.animations.single-open");
+        sevenOpenAnimation = requireText(sevenOpenAnimation, "defaults.crate.animations.seven-open");
     }
 
     public static CrateDefaults load(FileConfiguration config) {
@@ -49,7 +51,8 @@ public record CrateDefaults(
                 config.getString(ROOT + "models.crate", "default_crate"),
                 LootModelPalette.load(config),
                 config.getString(ROOT + "animations.idle", "idle"),
-                config.getString(ROOT + "animations.open", "open2")
+                config.getString(ROOT + "animations.single-open", "open1"),
+                config.getString(ROOT + "animations.seven-open", "open7")
         );
     }
 

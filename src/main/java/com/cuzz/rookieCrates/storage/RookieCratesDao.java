@@ -82,8 +82,9 @@ public final class RookieCratesDao {
                 INSERT INTO crates(
                     id, display_name, enabled, key_item_blob, single_price, seven_price,
                     guarantee_a, guarantee_s, scene_profile_id, broadcast_rarity,
-                    skip_allowed, interaction_width, interaction_height, idle_animation, open_animation
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    skip_allowed, interaction_width, interaction_height, idle_animation,
+                    single_open_animation, seven_open_animation
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     display_name = excluded.display_name,
                     enabled = excluded.enabled,
@@ -98,7 +99,8 @@ public final class RookieCratesDao {
                     interaction_width = excluded.interaction_width,
                     interaction_height = excluded.interaction_height,
                     idle_animation = excluded.idle_animation,
-                    open_animation = excluded.open_animation
+                    single_open_animation = excluded.single_open_animation,
+                    seven_open_animation = excluded.seven_open_animation
                 """)) {
             int index = 1;
             statement.setString(index++, crate.id());
@@ -116,7 +118,8 @@ public final class RookieCratesDao {
             statement.setDouble(index++, crate.interactionWidth());
             statement.setDouble(index++, crate.interactionHeight());
             statement.setString(index++, crate.idleAnimation());
-            statement.setString(index, crate.openAnimation());
+            statement.setString(index++, crate.singleOpenAnimation());
+            statement.setString(index, crate.sevenOpenAnimation());
             statement.executeUpdate();
         }
     }
@@ -1391,7 +1394,8 @@ public final class RookieCratesDao {
                 result.getDouble("interaction_width"),
                 result.getDouble("interaction_height"),
                 result.getString("idle_animation"),
-                result.getString("open_animation")
+                result.getString("single_open_animation"),
+                result.getString("seven_open_animation")
         );
     }
 

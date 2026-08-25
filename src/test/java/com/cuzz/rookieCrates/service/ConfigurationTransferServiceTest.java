@@ -41,7 +41,7 @@ class ConfigurationTransferServiceTest {
                 dao.upsertCrate(new CrateDefinition(
                         "alpha", "Alpha Crate", true, new byte[]{1, 2, 3},
                         25.0D, 150.0D, 10, 80, "alpha_scene", Rarity.S,
-                        true, 1.5D, 2.0D, "idle", "open2"
+                        true, 1.5D, 2.0D, "idle", "open1", "open7"
                 ));
                 dao.replaceRewardBundle(new RewardBundle(
                         new RewardDefinition("diamond", "alpha", "Diamond", "", Rarity.S,

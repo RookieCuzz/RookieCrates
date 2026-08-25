@@ -8,6 +8,7 @@ import com.ticxo.modelengine.api.entity.Dummy;
 import com.ticxo.modelengine.api.model.ActiveModel;
 import com.ticxo.modelengine.api.model.ModeledEntity;
 import com.ticxo.modelengine.api.model.bone.BoneBehaviorTypes;
+import com.ticxo.modelengine.api.model.bone.type.HeldItem;
 import com.ticxo.modelengine.api.model.bone.type.NameTag;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -159,9 +160,7 @@ public final class RuntimeModelHandle {
         if (removed) {
             return;
         }
-        activeModel.getBone("item")
-                .orElseThrow(() -> new IllegalStateException("Loot model has no item bone"))
-                .setModel(item.clone());
+        setLootItem(activeModel, item);
         activeModel.getBone("tag_name")
                 .flatMap(bone -> bone.getBoneBehavior(BoneBehaviorTypes.NAMETAG))
                 .filter(NameTag.class::isInstance)
@@ -170,6 +169,22 @@ public final class RuntimeModelHandle {
                     nameTag.setString(displayName);
                     nameTag.setVisible(true);
                 });
+    }
+
+    /** Uses ModelEngine's held-item renderer; a plain empty bone has no renderer of its own. */
+    static void setLootItem(ActiveModel activeModel, ItemStack item) {
+        HeldItem heldItem = lootItemBehavior(activeModel);
+        heldItem.setItemProvider(new HeldItem.StaticItemStackSupplier(item.clone()));
+    }
+
+    static HeldItem lootItemBehavior(ActiveModel activeModel) {
+        return activeModel.getBone("item")
+                .orElseThrow(() -> new IllegalStateException("Loot model has no item bone"))
+                .getBoneBehavior(BoneBehaviorTypes.ITEM)
+                .map(HeldItem.class::cast)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Loot item bone has no ModelEngine held-item behavior; name it ih_item"
+                ));
     }
 
     public void setHidden(Player player, boolean hidden) {

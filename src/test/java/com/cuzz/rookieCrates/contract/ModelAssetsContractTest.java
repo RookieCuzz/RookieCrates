@@ -36,7 +36,8 @@ class ModelAssetsContractTest {
     void defaultCrateProvidesConfiguredAnimations() throws IOException {
         JsonObject model = read("default_crate");
         assertTrue(hasNamedEntry(model.getAsJsonArray("animations"), "idle"));
-        assertTrue(hasNamedEntry(model.getAsJsonArray("animations"), "open2"));
+        assertTrue(hasNamedEntry(model.getAsJsonArray("animations"), "open1"));
+        assertTrue(hasNamedEntry(model.getAsJsonArray("animations"), "open7"));
     }
 
     @Test
@@ -44,7 +45,8 @@ class ModelAssetsContractTest {
         for (String modelId : List.of("loot_white", "loot_pink", "loot_blue", "loot_yellow")) {
             JsonObject model = read(modelId);
             assertTrue(hasNamedEntry(model.getAsJsonArray("animations"), "idle"), modelId + " idle");
-            assertTrue(hasNamedEntry(model.getAsJsonArray("outliner"), "item"), modelId + " item bone");
+            assertTrue(hasNamedEntry(model.getAsJsonArray("outliner"), "ih_item"),
+                    modelId + " ModelEngine held-item bone");
         }
     }
 

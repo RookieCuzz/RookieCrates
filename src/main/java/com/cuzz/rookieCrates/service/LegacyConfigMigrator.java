@@ -89,7 +89,8 @@ public final class LegacyConfigMigrator {
                     1.5D,
                     2.0D,
                     "idle",
-                    "open2"
+                    "open1",
+                    "open7"
             ));
             dao.upsertPlacement(crate.get().toPlacement(crateId + "_main", crateId));
             dao.upsertScenePoint(crate.get().toScenePoint(profileId, ScenePointKind.CRATE, 1));

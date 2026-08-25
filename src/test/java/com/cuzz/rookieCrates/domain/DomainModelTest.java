@@ -26,7 +26,7 @@ class DomainModelTest {
         byte[] key = {1, 2, 3};
         CrateDefinition crate = new CrateDefinition(
                 "basic", "Basic", true, key, 10, 60, 10, 80,
-                null, null, true, 1.5, 2.0, "idle", "open2"
+                null, null, true, 1.5, 2.0, "idle", "open1", "open7"
         );
         key[0] = 9;
         assertEquals(1, crate.keyItemBlob()[0]);
@@ -34,6 +34,9 @@ class DomainModelTest {
         returned[1] = 9;
         assertEquals(2, crate.keyItemBlob()[1]);
         assertNull(crate.broadcastRarity());
+        assertEquals("open1", crate.openAnimationFor(1));
+        assertEquals("open7", crate.openAnimationFor(7));
+        assertThrows(IllegalArgumentException.class, () -> crate.openAnimationFor(2));
     }
 
     @Test

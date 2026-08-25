@@ -436,7 +436,8 @@ public final class OpeningCoordinator {
                 && Double.compare(expected.interactionWidth(), actual.interactionWidth()) == 0
                 && Double.compare(expected.interactionHeight(), actual.interactionHeight()) == 0
                 && expected.idleAnimation().equals(actual.idleAnimation())
-                && expected.openAnimation().equals(actual.openAnimation());
+                && expected.singleOpenAnimation().equals(actual.singleOpenAnimation())
+                && expected.sevenOpenAnimation().equals(actual.sevenOpenAnimation());
     }
 
     private static boolean sameRewardPool(List<RewardBundle> expected, List<RewardBundle> actual) {
@@ -483,7 +484,7 @@ public final class OpeningCoordinator {
                 commit.transactionId(),
                 commit.placement(),
                 displayRewards,
-                commit.crate().openAnimation(),
+                commit.crate().openAnimationFor(displayRewards.size()),
                 commit.crate().skipAllowed(),
                 () -> finishCommittedDraw(player, commit, null),
                 failure -> finishCommittedDraw(player, commit, failure)

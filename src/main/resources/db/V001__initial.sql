@@ -20,7 +20,8 @@ CREATE TABLE crates (
     interaction_width REAL NOT NULL DEFAULT 1.5 CHECK (interaction_width > 0),
     interaction_height REAL NOT NULL DEFAULT 2.0 CHECK (interaction_height > 0),
     idle_animation TEXT NOT NULL DEFAULT 'idle',
-    open_animation TEXT NOT NULL DEFAULT 'open2'
+    single_open_animation TEXT NOT NULL DEFAULT 'open1',
+    seven_open_animation TEXT NOT NULL DEFAULT 'open7'
 );
 
 CREATE TABLE rewards (

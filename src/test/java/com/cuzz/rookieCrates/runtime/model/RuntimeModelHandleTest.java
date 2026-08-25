@@ -2,6 +2,9 @@ package com.cuzz.rookieCrates.runtime.model;
 
 import com.ticxo.modelengine.api.model.ActiveModel;
 import com.ticxo.modelengine.api.model.ModeledEntity;
+import com.ticxo.modelengine.api.model.bone.ModelBone;
+import com.ticxo.modelengine.api.model.bone.behavior.BoneBehavior;
+import com.ticxo.modelengine.api.model.bone.type.HeldItem;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
@@ -10,6 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,6 +47,22 @@ class RuntimeModelHandleTest {
         RuntimeModelHandle.attachModel(modeled, active, "default_crate");
 
         assertTrue(previousDestroyed.get());
+    }
+
+    @Test
+    void lootItemFindsModelEngineHeldItemBehavior() {
+        HeldItem heldItem = heldItem();
+        ActiveModel active = activeModelWithItemBone(itemBone(Optional.of(heldItem)));
+
+        assertSame(heldItem, RuntimeModelHandle.lootItemBehavior(active));
+    }
+
+    @Test
+    void lootItemRejectsPlainBoneWithoutHeldItemBehavior() {
+        ActiveModel active = activeModelWithItemBone(itemBone(Optional.empty()));
+
+        assertThrows(IllegalStateException.class,
+                () -> RuntimeModelHandle.lootItemBehavior(active));
     }
 
     private static ModeledEntity modeledEntity(
@@ -79,6 +99,47 @@ class RuntimeModelHandleTest {
                     case "hashCode" -> System.identityHashCode(proxy);
                     case "equals" -> proxy == args[0];
                     case "toString" -> "ActiveModelTestDouble";
+                    default -> primitiveDefault(method.getReturnType());
+                }
+        );
+    }
+
+    private static ActiveModel activeModelWithItemBone(ModelBone bone) {
+        return (ActiveModel) Proxy.newProxyInstance(
+                ActiveModel.class.getClassLoader(),
+                new Class<?>[]{ActiveModel.class},
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "getBone" -> Optional.of(bone);
+                    case "hashCode" -> System.identityHashCode(proxy);
+                    case "equals" -> proxy == args[0];
+                    case "toString" -> "LootActiveModelTestDouble";
+                    default -> primitiveDefault(method.getReturnType());
+                }
+        );
+    }
+
+    private static ModelBone itemBone(Optional<HeldItem> behavior) {
+        return (ModelBone) Proxy.newProxyInstance(
+                ModelBone.class.getClassLoader(),
+                new Class<?>[]{ModelBone.class},
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "getBoneBehavior" -> behavior;
+                    case "hashCode" -> System.identityHashCode(proxy);
+                    case "equals" -> proxy == args[0];
+                    case "toString" -> "ItemBoneTestDouble";
+                    default -> primitiveDefault(method.getReturnType());
+                }
+        );
+    }
+
+    private static HeldItem heldItem() {
+        return (HeldItem) Proxy.newProxyInstance(
+                HeldItem.class.getClassLoader(),
+                new Class<?>[]{HeldItem.class, BoneBehavior.class},
+                (proxy, method, args) -> switch (method.getName()) {
+                    case "hashCode" -> System.identityHashCode(proxy);
+                    case "equals" -> proxy == args[0];
+                    case "toString" -> "HeldItemTestDouble";
                     default -> primitiveDefault(method.getReturnType());
                 }
         );
