@@ -49,6 +49,8 @@ public final class RookieCratesCommand implements TabExecutor {
                 Player player = adminPlayer(sender);
                 if (player != null) gui.openAdminList(player, 0);
             }
+            case "config" -> config(sender, args);
+            case "preview" -> preview(sender, args);
             case "key" -> key(sender, args);
             case "place" -> place(sender, args);
             case "remove" -> remove(sender, args);
@@ -63,6 +65,26 @@ public final class RookieCratesCommand implements TabExecutor {
         if (player == null) return;
         if (args.length < 2) gui.openPlayerList(player, 0);
         else gui.openPlayerCrate(player, args[1], 0);
+    }
+
+    private void config(CommandSender sender, String[] args) {
+        Player player = adminPlayer(sender);
+        if (player == null) return;
+        if (args.length != 2) {
+            sender.sendMessage("§c用法: /rookiecrates config <宝箱ID>");
+            return;
+        }
+        gui.openSceneConfig(player, args[1]);
+    }
+
+    private void preview(CommandSender sender, String[] args) {
+        Player player = adminPlayer(sender);
+        if (player == null) return;
+        if (args.length != 2) {
+            sender.sendMessage("§c用法: /rookiecrates preview <宝箱ID>");
+            return;
+        }
+        result(sender, () -> facade.previewLoot(player, args[1]));
     }
 
     private void key(CommandSender sender, String[] args) {
@@ -174,6 +196,8 @@ public final class RookieCratesCommand implements TabExecutor {
         sender.sendMessage("§e/" + label + " claim §7- 领取待发奖励");
         if (sender.hasPermission(CratesGuiController.ADMIN_PERMISSION)) {
             sender.sendMessage("§c/" + label + " admin §7- 管理 GUI");
+            sender.sendMessage("§c/" + label + " config <宝箱ID> §7- 打开场景点位 GUI");
+            sender.sendMessage("§c/" + label + " preview <宝箱ID> §7- 随机预览七个 Loot 展示物");
             sender.sendMessage("§c/" + label + " key give <玩家> <宝箱ID> <数量> <physical|virtual>");
             sender.sendMessage("§c/" + label + " place|remove <宝箱ID>");
             sender.sendMessage("§c/" + label + " scene <宝箱ID> <场景点>");
@@ -184,7 +208,7 @@ public final class RookieCratesCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return filter(sender.hasPermission(CratesGuiController.ADMIN_PERMISSION)
-                    ? List.of("open", "claim", "admin", "key", "place", "remove", "scene", "help")
+                    ? List.of("open", "claim", "admin", "config", "preview", "key", "place", "remove", "scene", "help")
                     : List.of("open", "claim", "help"), args[0]);
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("key")) return filter(List.of("give"), args[1]);

@@ -20,6 +20,7 @@ com\cuzz\rookieCrates\gui\ChatInputManager$Session.class
 com\cuzz\rookieCrates\gui\ScreenHolder$Screen.class
 com\cuzz\rookieCrates\storage\SqlConsumer.class
 com\cuzz\rookieCrates\gui\api\DefaultCratesGuiFacade$ViewSnapshot.class
+com\cuzz\rookieCrates\runtime\LootPreviewController$PreviewSnapshot.class
 com\cuzz\rookieCrates\economy\EconomyGateway$TransactionResult.class
 com\cuzz\rookieCrates\gui\api\CratesGuiFacade$DrawType.class
 com\cuzz\rookieCrates\domain\PendingDeliveryStatus.class
@@ -33,6 +34,7 @@ com\cuzz\rookieCrates\domain\RewardItem.class
 com\cuzz\rookieCrates\service\PitySelector.class
 com\cuzz\rookieCrates\domain\SceneProfile.class
 com\cuzz\rookieCrates\service\OpeningCoordinator$OpeningRejectedException.class
+com\cuzz\rookieCrates\runtime\LootPreviewController$PreviewSession.class
 com\cuzz\rookieCrates\gui\GuiItems.class
 com\cuzz\rookieCrates\service\LegacyConfigMigrator$LegacyPoint.class
 com\cuzz\rookieCrates\gui\api\DefaultCratesGuiFacade$PointKey.class
@@ -48,6 +50,7 @@ com\cuzz\rookieCrates\service\PaymentService$RefundResult.class
 com\cuzz\rookieCrates\runtime\SceneTiming.class
 com\cuzz\rookieCrates\service\ConfigurationTransferService$ConfigurationSnapshot.class
 com\cuzz\rookieCrates\domain\PlayerCrateState.class
+com\cuzz\rookieCrates\gui\api\CratesGuiFacade$ScenePointLocation.class
 com\cuzz\rookieCrates\service\PaymentService$Quote.class
 com\cuzz\rookieCrates\storage\RookieCratesDao.class
 com\cuzz\rookieCrates\economy\VaultEconomyGateway.class
@@ -56,6 +59,7 @@ com\cuzz\rookieCrates\util\ItemStackCodec.class
 com\cuzz\rookieCrates\domain\DomainChecks.class
 com\cuzz\rookieCrates\gui\api\CratesGuiFacade$RewardView.class
 com\cuzz\rookieCrates\domain\RewardBundle.class
+com\cuzz\rookieCrates\gui\CratesGuiController$FineAxis.class
 com\cuzz\rookieCrates\runtime\model\RuntimeModelHandle.class
 com\cuzz\rookieCrates\storage\DatabaseException.class
 com\cuzz\rookieCrates\listener\SceneLifecycleListener.class
@@ -100,10 +104,12 @@ com\cuzz\rookieCrates\runtime\recovery\SceneRecoveryStore.class
 com\cuzz\rookieCrates\storage\MigrationRunner$Migration.class
 com\cuzz\rookieCrates\service\RewardDeliveryService$UpdateKind.class
 com\cuzz\rookieCrates\service\PitySelector$Policy.class
+com\cuzz\rookieCrates\runtime\LootPreviewController.class
 com\cuzz\rookieCrates\gui\api\DefaultCratesGuiFacade$RuntimeSnapshot.class
 com\cuzz\rookieCrates\gui\api\CratesGuiFacade$CrateView.class
 com\cuzz\rookieCrates\command\RookieCratesCommand.class
 com\cuzz\rookieCrates\runtime\CrateInteractionFacade.class
+com\cuzz\rookieCrates\runtime\LootPreviewController$PreviewReport.class
 com\cuzz\rookieCrates\service\PaymentService.class
 com\cuzz\rookieCrates\service\ConfigurationTransferService.class
 com\cuzz\rookieCrates\service\OpeningCoordinator$FinalizationOutcome.class

@@ -38,6 +38,10 @@ opening:
   skip-after-ticks: 40
   reveal-duration-ticks: 100
 
+preview:
+  # /rc preview 生成的七个私有 Loot 模型保留时间；600 ticks = 30 秒。
+  duration-ticks: 600
+
 broadcast:
   # 新建宝箱默认使用的全服广播稀有度门槛。
   minimum-rarity: S

@@ -18,7 +18,8 @@ public final class ScreenHolder implements InventoryHolder {
         ADMIN_LIST,
         ADMIN_CRATE,
         REWARD_EDIT,
-        SCENE
+        SCENE,
+        SCENE_FINE
     }
 
     private final UUID viewer;

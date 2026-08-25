@@ -10,6 +10,7 @@ import com.cuzz.rookieCrates.key.PhysicalKeyService;
 import com.cuzz.rookieCrates.listener.CrateRuntimeListener;
 import com.cuzz.rookieCrates.listener.SceneLifecycleListener;
 import com.cuzz.rookieCrates.runtime.CrateRuntime;
+import com.cuzz.rookieCrates.runtime.LootPreviewController;
 import com.cuzz.rookieCrates.runtime.SceneController;
 import com.cuzz.rookieCrates.runtime.SceneTiming;
 import com.cuzz.rookieCrates.service.ConfigurationTransferService;
@@ -34,6 +35,7 @@ public final class RookieCrates extends JavaPlugin {
 
     private SQLiteDatabase database;
     private CrateRuntime crateRuntime;
+    private LootPreviewController lootPreviewController;
     private SceneController sceneController;
     private DefaultCratesGuiFacade facade;
 
@@ -77,6 +79,14 @@ public final class RookieCrates extends JavaPlugin {
             RewardDeliveryService deliveries = new RewardDeliveryService(this, database, itemCodec);
 
             crateRuntime = new CrateRuntime(this);
+            lootPreviewController = new LootPreviewController(
+                    this,
+                    database,
+                    itemCodec,
+                    lootModels,
+                    new Random(),
+                    getConfig().getLong("preview.duration-ticks", 600L)
+            );
             SceneTiming sceneTiming = new SceneTiming(
                     getConfig().getLong("opening.reveal-delay-ticks", 95L),
                     getConfig().getLong("opening.reveal-duration-ticks", 100L),
@@ -114,6 +124,7 @@ public final class RookieCrates extends JavaPlugin {
                     deliveries,
                     playerLocks,
                     crateRuntime,
+                    lootPreviewController,
                     transfers,
                     crateDefaults
             );
@@ -129,6 +140,7 @@ public final class RookieCrates extends JavaPlugin {
             });
             getServer().getPluginManager().registerEvents(new CrateRuntimeListener(crateRuntime), this);
             getServer().getPluginManager().registerEvents(new SceneLifecycleListener(sceneController), this);
+            getServer().getPluginManager().registerEvents(lootPreviewController, this);
 
             facade.reloadRuntime().whenComplete((ignored, failure) -> {
                 if (failure != null) {
@@ -148,6 +160,9 @@ public final class RookieCrates extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (lootPreviewController != null) {
+            lootPreviewController.shutdown();
+        }
         if (sceneController != null) {
             sceneController.shutdown();
         }
@@ -164,6 +179,13 @@ public final class RookieCrates extends JavaPlugin {
     }
 
     private void cleanupAfterFailedEnable() {
+        if (lootPreviewController != null) {
+            try {
+                lootPreviewController.shutdown();
+            } catch (RuntimeException ignored) {
+                // Startup failure logging above is the primary failure.
+            }
+        }
         if (crateRuntime != null) {
             try {
                 crateRuntime.shutdown();

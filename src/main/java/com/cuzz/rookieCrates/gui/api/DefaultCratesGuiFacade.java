@@ -15,6 +15,7 @@ import com.cuzz.rookieCrates.economy.EconomyGateway;
 import com.cuzz.rookieCrates.key.PhysicalKeyService;
 import com.cuzz.rookieCrates.runtime.CratePlacement;
 import com.cuzz.rookieCrates.runtime.CrateRuntime;
+import com.cuzz.rookieCrates.runtime.LootPreviewController;
 import com.cuzz.rookieCrates.service.ConfigurationTransferService;
 import com.cuzz.rookieCrates.service.OpeningCoordinator;
 import com.cuzz.rookieCrates.service.PlayerOperationLocks;
@@ -58,6 +59,7 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
     private final RewardDeliveryService deliveries;
     private final PlayerOperationLocks playerLocks;
     private final CrateRuntime runtime;
+    private final LootPreviewController previews;
     private final ConfigurationTransferService transfers;
     private final CrateDefaults defaults;
 
@@ -71,6 +73,7 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
             RewardDeliveryService deliveries,
             PlayerOperationLocks playerLocks,
             CrateRuntime runtime,
+            LootPreviewController previews,
             ConfigurationTransferService transfers,
             CrateDefaults defaults
     ) {
@@ -83,6 +86,7 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
         this.deliveries = Objects.requireNonNull(deliveries, "deliveries");
         this.playerLocks = Objects.requireNonNull(playerLocks, "playerLocks");
         this.runtime = Objects.requireNonNull(runtime, "runtime");
+        this.previews = Objects.requireNonNull(previews, "previews");
         this.transfers = Objects.requireNonNull(transfers, "transfers");
         this.defaults = Objects.requireNonNull(defaults, "defaults");
     }
@@ -150,7 +154,15 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
 
     @Override
     public CompletableFuture<GuiResult> requestDraw(Player player, String crateId, DrawType drawType) {
+        previews.clear(player.getUniqueId());
         return openings.requestDraw(player, crateId, drawType);
+    }
+
+    @Override
+    public CompletableFuture<GuiResult> previewLoot(Player player, String crateId) {
+        String id = requireId(crateId);
+        return result(previews.preview(player, id), report -> "已在 LOOT_1..LOOT_7 生成随机奖励预览；"
+                + Math.max(1L, report.durationTicks() / 20L) + " 秒后自动清理，再次执行可重新随机。");
     }
 
     @Override
@@ -425,6 +437,29 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
             dao.upsertScenePoint(stored.toScenePoint(crate.sceneProfileId(), key.kind(), key.index()));
             return null;
         }).thenCompose(ignored -> reloadRuntime()), ignored -> point.name() + " 场景点已保存。" );
+    }
+
+    @Override
+    public CompletableFuture<Map<CratesGuiFacade.ScenePoint, ScenePointLocation>> getScenePoints(String crateId) {
+        String id = requireId(crateId);
+        return database.submit(dao -> {
+            CrateDefinition crate = dao.findCrate(id)
+                    .orElseThrow(() -> new IllegalArgumentException("宝箱不存在。"));
+            if (crate.sceneProfileId() == null) {
+                throw new IllegalArgumentException("宝箱没有场景配置。");
+            }
+            EnumMap<CratesGuiFacade.ScenePoint, ScenePointLocation> points =
+                    new EnumMap<>(CratesGuiFacade.ScenePoint.class);
+            for (com.cuzz.rookieCrates.domain.ScenePoint point
+                    : dao.listScenePoints(crate.sceneProfileId())) {
+                points.put(
+                        PointKey.toFacade(point.kind(), point.pointIndex()),
+                        new ScenePointLocation(
+                                point.world(), point.x(), point.y(), point.z(), point.yaw(), point.pitch())
+                );
+            }
+            return Map.copyOf(points);
+        });
     }
 
     @Override
@@ -758,6 +793,14 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                 case LOOT_5 -> new PointKey(ScenePointKind.LOOT, 5);
                 case LOOT_6 -> new PointKey(ScenePointKind.LOOT, 6);
                 case LOOT_7 -> new PointKey(ScenePointKind.LOOT, 7);
+            };
+        }
+
+        private static CratesGuiFacade.ScenePoint toFacade(ScenePointKind kind, int index) {
+            return switch (kind) {
+                case CRATE -> CratesGuiFacade.ScenePoint.CRATE;
+                case CAMERA -> CratesGuiFacade.ScenePoint.CAMERA;
+                case LOOT -> CratesGuiFacade.ScenePoint.valueOf("LOOT_" + index);
             };
         }
     }

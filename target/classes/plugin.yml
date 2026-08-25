@@ -8,7 +8,7 @@ commands:
   rookiecrates:
     aliases: [rc, crates]
     description: RookieCrates player and administration command
-    usage: /<command> [open|claim|admin|key|place|remove|scene]
+    usage: /<command> [open|claim|admin|config|preview|key|place|remove|scene]
 permissions:
   rookiecrates.use:
     description: Open configured RookieCrates and use player menus

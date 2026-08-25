@@ -10,8 +10,11 @@ import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.GuiResult;
 import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.RewardSettings;
 import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.RewardView;
 import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.ScenePoint;
+import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.ScenePointLocation;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -24,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -128,6 +132,16 @@ public final class CratesGuiController implements Listener {
         });
     }
 
+    public void openSceneConfig(Player player, String crateId) {
+        if (!requirePermission(player, ADMIN_PERMISSION)) {
+            return;
+        }
+        showLoading(player, Screen.SCENE, crateId, 0);
+        await(player, () -> facade.getScenePoints(crateId),
+                points -> renderScene(player, crateId, points),
+                () -> openAdminList(player, 0));
+    }
+
     public void claimPending(Player player) {
         if (!requirePermission(player, USE_PERMISSION)) {
             return;
@@ -155,7 +169,9 @@ public final class CratesGuiController implements Listener {
             case ADMIN_LIST -> clickAdminList(player, holder, slot);
             case ADMIN_CRATE -> clickAdminCrate(player, holder, slot, event.isLeftClick(), event.isRightClick(), event.isShiftClick());
             case REWARD_EDIT -> clickRewardEdit(player, holder, slot, event.isLeftClick(), event.isRightClick());
-            case SCENE -> clickScene(player, holder, slot);
+            case SCENE -> clickScene(player, holder, slot,
+                    event.isLeftClick(), event.isRightClick(), event.isShiftClick());
+            case SCENE_FINE -> clickSceneFine(player, holder, slot, event.isShiftClick());
         }
     }
 
@@ -272,7 +288,7 @@ public final class CratesGuiController implements Listener {
         player.openInventory(inventory);
     }
 
-    private void renderScene(Player player, String crateId) {
+    private void renderScene(Player player, String crateId, Map<ScenePoint, ScenePointLocation> configured) {
         ScreenHolder holder = screen(player, Screen.SCENE, crateId, null, 0, 27, "&4场景点: " + crateId);
         Inventory inventory = holder.getInventory();
         GuiItems.fill(inventory);
@@ -281,12 +297,101 @@ public final class CratesGuiController implements Listener {
             ScenePoint point = points[i];
             int slot = 9 + i;
             holder.setTarget(slot, point.name());
-            inventory.setItem(slot, GuiItems.item(point == ScenePoint.CRATE ? Material.CHEST
-                            : point == ScenePoint.CAMERA ? Material.ENDER_EYE : Material.ITEM_FRAME,
-                    "&e" + point.name(), "&7点击保存当前精确位置、朝向与世界"));
+            inventory.setItem(slot, scenePointButton(point, configured.get(point)));
         }
-        inventory.setItem(22, GuiItems.item(Material.OAK_DOOR, "&e返回"));
+        inventory.setItem(22, GuiItems.item(Material.OAK_DOOR, "&e返回宝箱管理"));
+        inventory.setItem(24, GuiItems.item(Material.NETHER_STAR, "&d随机预览七个 Loot",
+                "&7从已启用奖池按权重随机抽取",
+                "&7在 LOOT_1..LOOT_7 生成私有模型",
+                "&7再次点击会重新随机并替换预览"));
+        inventory.setItem(26, GuiItems.item(Material.COMPASS, "&b操作说明",
+                "&7左键：记录当前位置与朝向",
+                "&7右键：传送到已保存点位",
+                "&7Shift + 左键：精细编辑"));
         player.openInventory(inventory);
+    }
+
+    private void renderSceneFine(
+            Player player,
+            String crateId,
+            ScenePoint point,
+            ScenePointLocation location
+    ) {
+        ScreenHolder holder = screen(player, Screen.SCENE_FINE, crateId, point.name(), 0, 54,
+                "&4精细编辑: " + point.name());
+        Inventory inventory = holder.getInventory();
+        GuiItems.fill(inventory);
+        inventory.setItem(4, GuiItems.item(Material.COMPASS, "&e" + point.name(),
+                "&7世界: &f" + location.world(),
+                coordinate("X", location.x()),
+                coordinate("Y", location.y()),
+                coordinate("Z", location.z()),
+                angle("Yaw", location.yaw()),
+                angle("Pitch", location.pitch()),
+                "&a每次调整都会立即保存"));
+
+        fineAxis(inventory, 10, 11, 12, "X", Material.REDSTONE, 0.01D);
+        fineAxis(inventory, 19, 20, 21, "Y", Material.SLIME_BALL, 0.01D);
+        fineAxis(inventory, 28, 29, 30, "Z", Material.LAPIS_LAZULI, 0.01D);
+        fineAxis(inventory, 14, 15, 16, "Yaw", Material.COMPASS, 1.0D);
+        fineAxis(inventory, 23, 24, 25, "Pitch", Material.SPYGLASS, 1.0D);
+
+        inventory.setItem(39, GuiItems.item(Material.TARGET, "&a使用玩家当前位置",
+                "&7覆盖该点位的坐标与朝向"));
+        inventory.setItem(41, GuiItems.item(Material.ENDER_PEARL, "&b传送到该点位"));
+        inventory.setItem(45, GuiItems.item(Material.OAK_DOOR, "&e返回点位列表"));
+        inventory.setItem(49, GuiItems.item(Material.SUNFLOWER, "&e刷新"));
+        inventory.setItem(53, GuiItems.item(Material.CHEST, "&e返回宝箱管理"));
+        player.openInventory(inventory);
+    }
+
+    private static ItemStack scenePointButton(ScenePoint point, ScenePointLocation location) {
+        Material material = point == ScenePoint.CRATE
+                ? Material.CHEST
+                : point == ScenePoint.CAMERA ? Material.ENDER_EYE : Material.ITEM_FRAME;
+        List<String> lore = new ArrayList<>();
+        if (location == null) {
+            lore.add("&c尚未设置");
+        } else {
+            lore.add("&7世界: &f" + location.world());
+            lore.add("&7XYZ: &f" + String.format(Locale.ROOT, "%.3f, %.3f, %.3f",
+                    location.x(), location.y(), location.z()));
+            lore.add("&7朝向: &f" + String.format(Locale.ROOT, "%.1f / %.1f",
+                    location.yaw(), location.pitch()));
+        }
+        lore.add("&7左键：记录当前位置与朝向");
+        lore.add("&7右键：传送到该点位");
+        lore.add("&7Shift + 左键：精细编辑");
+        return GuiItems.decorate(new ItemStack(material),
+                (location == null ? "&c" : "&a") + point.name(), lore);
+    }
+
+    private static void fineAxis(
+            Inventory inventory,
+            int minusSlot,
+            int labelSlot,
+            int plusSlot,
+            String axis,
+            Material material,
+            double step
+    ) {
+        String unit = axis.equals("Yaw") || axis.equals("Pitch") ? "°" : " 格";
+        inventory.setItem(minusSlot, GuiItems.item(Material.RED_DYE, "&c" + axis + " -",
+                "&7点击: -" + step + unit,
+                "&7Shift 点击: -" + (step * 10.0D) + unit));
+        inventory.setItem(labelSlot, GuiItems.item(material, "&e调整 " + axis,
+                "&7两侧按钮用于减少或增加"));
+        inventory.setItem(plusSlot, GuiItems.item(Material.LIME_DYE, "&a" + axis + " +",
+                "&7点击: +" + step + unit,
+                "&7Shift 点击: +" + (step * 10.0D) + unit));
+    }
+
+    private static String coordinate(String axis, double value) {
+        return "&7" + axis + ": &f" + String.format(Locale.ROOT, "%.3f", value);
+    }
+
+    private static String angle(String axis, float value) {
+        return "&7" + axis + ": &f" + String.format(Locale.ROOT, "%.1f°", value);
     }
 
     private void clickPlayerList(Player player, ScreenHolder holder, int slot) {
@@ -360,7 +465,7 @@ public final class CratesGuiController implements Listener {
             case 5 -> inputPity(player, crateId, holder.page(), rightClick);
             case 6 -> inputModels(player, crateId, holder.page());
             case 7 -> inputDimensions(player, crateId, holder.page());
-            case 8 -> renderScene(player, crateId);
+            case 8 -> openSceneConfig(player, crateId);
             case 36 -> openAdminCrate(player, crateId, Math.max(0, holder.page() - 1));
             case 37 -> openAdminCrate(player, crateId, holder.page() + 1);
             case 38 -> openAdminList(player, 0);
@@ -431,17 +536,198 @@ public final class CratesGuiController implements Listener {
         }
     }
 
-    private void clickScene(Player player, ScreenHolder holder, int slot) {
+    private void clickScene(
+            Player player,
+            ScreenHolder holder,
+            int slot,
+            boolean leftClick,
+            boolean rightClick,
+            boolean shiftClick
+    ) {
+        if (!requirePermission(player, ADMIN_PERMISSION)) {
+            return;
+        }
         if (slot == 22) {
             openAdminCrate(player, holder.crateId(), 0);
             return;
         }
+        if (slot == 24) {
+            awaitResult(player,
+                    () -> facade.previewLoot(player, holder.crateId()),
+                    () -> openSceneConfig(player, holder.crateId()));
+            return;
+        }
         holder.target(slot).ifPresent(value -> {
             ScenePoint point = ScenePoint.valueOf(value);
-            awaitResult(player,
-                    () -> facade.setScenePoint(holder.crateId(), point, player.getLocation().clone()),
-                    () -> renderScene(player, holder.crateId()));
+            if (leftClick && shiftClick) {
+                openSceneFine(player, holder.crateId(), point, true);
+            } else if (rightClick) {
+                teleportToScenePoint(player, holder.crateId(), point,
+                        () -> openSceneConfig(player, holder.crateId()));
+            } else if (leftClick) {
+                awaitResult(player,
+                        () -> facade.setScenePoint(holder.crateId(), point, player.getLocation().clone()),
+                        () -> openSceneConfig(player, holder.crateId()));
+            }
         });
+    }
+
+    private void clickSceneFine(Player player, ScreenHolder holder, int slot, boolean shiftClick) {
+        if (!requirePermission(player, ADMIN_PERMISSION)) {
+            return;
+        }
+        if (holder.rewardId() == null) {
+            return;
+        }
+        ScenePoint point = ScenePoint.valueOf(holder.rewardId());
+        switch (slot) {
+            case 10 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.X, -fineStep(FineAxis.X, shiftClick));
+            case 12 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.X, fineStep(FineAxis.X, shiftClick));
+            case 19 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.Y, -fineStep(FineAxis.Y, shiftClick));
+            case 21 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.Y, fineStep(FineAxis.Y, shiftClick));
+            case 28 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.Z, -fineStep(FineAxis.Z, shiftClick));
+            case 30 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.Z, fineStep(FineAxis.Z, shiftClick));
+            case 14 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.YAW, -fineStep(FineAxis.YAW, shiftClick));
+            case 16 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.YAW, fineStep(FineAxis.YAW, shiftClick));
+            case 23 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.PITCH, -fineStep(FineAxis.PITCH, shiftClick));
+            case 25 -> adjustScenePoint(player, holder.crateId(), point, FineAxis.PITCH, fineStep(FineAxis.PITCH, shiftClick));
+            case 39 -> saveScenePoint(player, holder.crateId(), point, player.getLocation().clone(), true,
+                    () -> openSceneFine(player, holder.crateId(), point, false),
+                    () -> openSceneFine(player, holder.crateId(), point, false));
+            case 41 -> teleportToScenePoint(player, holder.crateId(), point,
+                    () -> openSceneFine(player, holder.crateId(), point, false));
+            case 45 -> openSceneConfig(player, holder.crateId());
+            case 49 -> openSceneFine(player, holder.crateId(), point, false);
+            case 53 -> openAdminCrate(player, holder.crateId(), 0);
+            default -> {
+            }
+        }
+    }
+
+    private void openSceneFine(Player player, String crateId, ScenePoint point, boolean initializeMissing) {
+        showLoading(player, Screen.SCENE_FINE, crateId, 0);
+        await(player, () -> facade.getScenePoints(crateId), points -> {
+            ScenePointLocation location = points.get(point);
+            if (location != null) {
+                renderSceneFine(player, crateId, point, location);
+                return;
+            }
+            if (!initializeMissing) {
+                player.sendMessage(GuiItems.color("&c该点位尚未设置，请先在点位列表左键记录。"));
+                openSceneConfig(player, crateId);
+                return;
+            }
+            saveScenePoint(player, crateId, point, player.getLocation().clone(), false,
+                    () -> openSceneFine(player, crateId, point, false),
+                    () -> openSceneConfig(player, crateId));
+        }, () -> openSceneConfig(player, crateId));
+    }
+
+    private void adjustScenePoint(
+            Player player,
+            String crateId,
+            ScenePoint point,
+            FineAxis axis,
+            double amount
+    ) {
+        showLoading(player, Screen.SCENE_FINE, crateId, 0);
+        await(player, () -> facade.getScenePoints(crateId), points -> {
+            ScenePointLocation current = points.get(point);
+            if (current == null) {
+                player.sendMessage(GuiItems.color("&c该点位尚未设置。"));
+                openSceneConfig(player, crateId);
+                return;
+            }
+            ScenePointLocation updated = adjusted(current, axis, amount);
+            final Location destination;
+            try {
+                destination = bukkitLocation(updated);
+            } catch (IllegalArgumentException exception) {
+                reportFailure(player, exception);
+                openSceneFine(player, crateId, point, false);
+                return;
+            }
+            saveScenePoint(player, crateId, point, destination, false, () -> {
+                player.teleport(destination);
+                openSceneFine(player, crateId, point, false);
+            }, () -> openSceneFine(player, crateId, point, false));
+        }, () -> openSceneFine(player, crateId, point, false));
+    }
+
+    private void teleportToScenePoint(Player player, String crateId, ScenePoint point, Runnable after) {
+        showLoading(player, Screen.SCENE, crateId, 0);
+        await(player, () -> facade.getScenePoints(crateId), points -> {
+            ScenePointLocation location = points.get(point);
+            if (location == null) {
+                player.sendMessage(GuiItems.color("&c" + point.name() + " 尚未设置。"));
+            } else {
+                try {
+                    if (!player.teleport(bukkitLocation(location))) {
+                        player.sendMessage(GuiItems.color("&c无法传送到 " + point.name() + "。"));
+                    }
+                } catch (IllegalArgumentException exception) {
+                    reportFailure(player, exception);
+                }
+            }
+            after.run();
+        }, after);
+    }
+
+    private void saveScenePoint(
+            Player player,
+            String crateId,
+            ScenePoint point,
+            Location location,
+            boolean announce,
+            Runnable success,
+            Runnable failure
+    ) {
+        await(player, () -> facade.setScenePoint(crateId, point, location), result -> {
+            if (!result.success()) {
+                player.sendMessage(GuiItems.color("&c" + result.message()));
+                failure.run();
+                return;
+            }
+            if (announce) {
+                player.sendMessage(GuiItems.color("&a" + result.message()));
+            }
+            success.run();
+        }, failure);
+    }
+
+    static double fineStep(FineAxis axis, boolean shifted) {
+        double base = axis == FineAxis.YAW || axis == FineAxis.PITCH ? 1.0D : 0.01D;
+        return shifted ? base * 10.0D : base;
+    }
+
+    static ScenePointLocation adjusted(ScenePointLocation value, FineAxis axis, double amount) {
+        return switch (axis) {
+            case X -> new ScenePointLocation(value.world(), value.x() + amount, value.y(), value.z(),
+                    value.yaw(), value.pitch());
+            case Y -> new ScenePointLocation(value.world(), value.x(), value.y() + amount, value.z(),
+                    value.yaw(), value.pitch());
+            case Z -> new ScenePointLocation(value.world(), value.x(), value.y(), value.z() + amount,
+                    value.yaw(), value.pitch());
+            case YAW -> new ScenePointLocation(value.world(), value.x(), value.y(), value.z(),
+                    wrappedYaw((float) (value.yaw() + amount)), value.pitch());
+            case PITCH -> new ScenePointLocation(value.world(), value.x(), value.y(), value.z(),
+                    value.yaw(), (float) Math.max(-90.0D, Math.min(90.0D, value.pitch() + amount)));
+        };
+    }
+
+    static float wrappedYaw(float yaw) {
+        float wrapped = yaw % 360.0F;
+        if (wrapped >= 180.0F) wrapped -= 360.0F;
+        if (wrapped < -180.0F) wrapped += 360.0F;
+        return wrapped;
+    }
+
+    private static Location bukkitLocation(ScenePointLocation point) {
+        World world = Bukkit.getWorld(point.world());
+        if (world == null) {
+            throw new IllegalArgumentException("世界未加载：" + point.world());
+        }
+        return new Location(world, point.x(), point.y(), point.z(), point.yaw(), point.pitch());
     }
 
     private void requestDraw(Player player, String crateId, DrawType drawType) {
@@ -961,5 +1247,13 @@ public final class CratesGuiController implements Listener {
     private static RewardSettings withRewardBroadcast(RewardSettings r, boolean value) {
         return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemReward(), r.consoleCommands(),
                 r.weight(), r.rarity(), value);
+    }
+
+    enum FineAxis {
+        X,
+        Y,
+        Z,
+        YAW,
+        PITCH
     }
 }

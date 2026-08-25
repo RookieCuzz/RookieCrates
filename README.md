@@ -2,6 +2,9 @@
 
 RookieCrates 是面向 Paper 1.21.1、ModelEngine R4 的模型宝箱插件，使用 SQLite 保存宝箱、奖池、玩家钥匙、保底进度、开箱事务和场景恢复数据。当前支持单抽与七连抽，奖品采用 `S、A、B、C` 四档，并按等级自动显示黄、粉、蓝、白四种 Loot 模型。
 
+管理员可使用 `/rc config <宝箱ID>` 打开场景点位 GUI，通过左键记录、右键传送和 `Shift + 左键` 精细调整 `CRATE`、`CAMERA`、`LOOT_1..LOOT_7`。
+`/rc preview <宝箱ID>` 会按奖池权重随机生成七个私有 Loot 模型，用于检查七个展示点及四档配色，不会触发消费、保底或奖励发放。
+
 ## 项目结构
 
 ```text

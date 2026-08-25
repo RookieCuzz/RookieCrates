@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +27,8 @@ public interface CratesGuiFacade {
      * seven-draw package price and starts one scene in which LOOT_1..LOOT_7 appear together.
      */
     CompletableFuture<GuiResult> requestDraw(Player player, String crateId, DrawType drawType);
+
+    CompletableFuture<GuiResult> previewLoot(Player player, String crateId);
 
     CompletableFuture<GuiResult> claimPending(Player player);
 
@@ -48,6 +51,8 @@ public interface CratesGuiFacade {
     CompletableFuture<GuiResult> removePlacement(String crateId);
 
     CompletableFuture<GuiResult> setScenePoint(String crateId, ScenePoint point, Location location);
+
+    CompletableFuture<Map<ScenePoint, ScenePointLocation>> getScenePoints(String crateId);
 
     CompletableFuture<GuiResult> exportConfig();
 
@@ -78,6 +83,23 @@ public interface CratesGuiFacade {
         LOOT_5,
         LOOT_6,
         LOOT_7
+    }
+
+    record ScenePointLocation(
+            String world,
+            double x,
+            double y,
+            double z,
+            float yaw,
+            float pitch
+    ) {
+        public ScenePointLocation {
+            world = requireText(world, "world");
+            if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)
+                    || !Float.isFinite(yaw) || !Float.isFinite(pitch)) {
+                throw new IllegalArgumentException("Scene point coordinates must be finite");
+            }
+        }
     }
 
     record GuiResult(boolean success, String message) {
