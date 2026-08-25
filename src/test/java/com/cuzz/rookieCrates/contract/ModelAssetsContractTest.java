@@ -48,6 +48,28 @@ class ModelAssetsContractTest {
         }
     }
 
+    @Test
+    void embeddedTexturesAreExportedIntoTheModelEngineResourcePack() throws IOException {
+        for (String modelId : List.of(
+                "default_crate",
+                "loot_white",
+                "loot_pink",
+                "loot_blue",
+                "loot_yellow"
+        )) {
+            JsonArray textures = read(modelId).getAsJsonArray("textures");
+            assertTrue(textures != null && !textures.isEmpty(), modelId + " textures");
+            for (var element : textures) {
+                JsonObject texture = element.getAsJsonObject();
+                assertTrue(texture.get("internal").getAsBoolean(), modelId + " internal texture");
+                assertTrue(texture.get("source").getAsString().startsWith("data:image/png;base64,"),
+                        modelId + " embedded texture source");
+                assertTrue(!texture.has("namespace") || texture.get("namespace").getAsString().isBlank(),
+                        modelId + " texture must be managed by ModelEngine");
+            }
+        }
+    }
+
     private static JsonObject read(String modelId) throws IOException {
         Path file = BLUEPRINTS.resolve(modelId + ".bbmodel");
         assertTrue(Files.isRegularFile(file), () -> "Missing model asset: " + file);
