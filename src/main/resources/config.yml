@@ -18,7 +18,12 @@ defaults:
       height: 2.0
     models:
       crate: default_crate
-      loot: loot_white
+      # 每个中奖结果根据自己的稀有度独立选择展示模型。
+      loot-by-rarity:
+        C: loot_white
+        B: loot_blue
+        A: loot_pink
+        S: loot_yellow
     animations:
       idle: idle
       open: open2

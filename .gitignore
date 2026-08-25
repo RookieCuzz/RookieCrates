@@ -1,15 +1,42 @@
-# Maven build output
+# Maven / Java build output
 /target/
 /dependency-reduced-pom.xml
+*.class
 
-# IntelliJ IDEA local files
+# IDE and editor-local files
 /.idea/
 /*.iml
+/.vscode/
+/.settings/
+/.classpath
+/.project
+*.iws
+*.ipr
 
-# Server/runtime data
-/*.db
+# Local server/runtime data
 /plugins/
+/logs/
+/cache/
+/exports/
+/*.db
+/*.db-shm
+/*.db-wal
+/*.sqlite
+/*.sqlite3
+*.log
+hs_err_pid*.log
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.bak
+*~
 
 # OS files
 .DS_Store
 Thumbs.db
+Desktop.ini

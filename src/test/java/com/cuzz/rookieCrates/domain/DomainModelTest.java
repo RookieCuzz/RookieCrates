@@ -2,6 +2,7 @@ package com.cuzz.rookieCrates.domain;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DomainModelTest {
     @Test
     void rarityOrderIsHighestToLowest() {
+        assertEquals(List.of(Rarity.S, Rarity.A, Rarity.B, Rarity.C), List.of(Rarity.values()));
         assertTrue(Rarity.S.isAtLeast(Rarity.S));
         assertTrue(Rarity.S.isAtLeast(Rarity.A));
         assertTrue(Rarity.A.isAtLeast(Rarity.B));

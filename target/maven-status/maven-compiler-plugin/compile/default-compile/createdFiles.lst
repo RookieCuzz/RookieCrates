@@ -51,6 +51,7 @@ com\cuzz\rookieCrates\domain\PlayerCrateState.class
 com\cuzz\rookieCrates\service\PaymentService$Quote.class
 com\cuzz\rookieCrates\storage\RookieCratesDao.class
 com\cuzz\rookieCrates\economy\VaultEconomyGateway.class
+com\cuzz\rookieCrates\config\LootModelPalette.class
 com\cuzz\rookieCrates\util\ItemStackCodec.class
 com\cuzz\rookieCrates\domain\DomainChecks.class
 com\cuzz\rookieCrates\gui\api\CratesGuiFacade$RewardView.class

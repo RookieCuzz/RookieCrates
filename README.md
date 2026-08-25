@@ -1,6 +1,6 @@
 # RookieCrates
 
-RookieCrates 是面向 Paper 1.21.1、ModelEngine R4 的模型宝箱插件，使用 SQLite 保存宝箱、奖池、玩家钥匙、保底进度、开箱事务和场景恢复数据。当前支持单抽与七连抽。
+RookieCrates 是面向 Paper 1.21.1、ModelEngine R4 的模型宝箱插件，使用 SQLite 保存宝箱、奖池、玩家钥匙、保底进度、开箱事务和场景恢复数据。当前支持单抽与七连抽，奖品采用 `S、A、B、C` 四档，并按等级自动显示黄、粉、蓝、白四种 Loot 模型。
 
 ## 项目结构
 

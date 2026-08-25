@@ -1,5 +1,6 @@
 package com.cuzz.rookieCrates.service;
 
+import com.cuzz.rookieCrates.config.LootModelPalette;
 import com.cuzz.rookieCrates.domain.CrateDefinition;
 import com.cuzz.rookieCrates.domain.OpenResult;
 import com.cuzz.rookieCrates.domain.OpenTransaction;
@@ -62,6 +63,7 @@ public final class OpeningCoordinator {
     private final Messages messages;
     private final PlayerOperationLocks playerLocks;
     private final PitySelector<RewardBundle> selector;
+    private final LootModelPalette lootModels;
     private final Map<UUID, String> preferredPlacements = new ConcurrentHashMap<>();
     private final Set<UUID> finalizingTransactions = ConcurrentHashMap.newKeySet();
 
@@ -74,7 +76,8 @@ public final class OpeningCoordinator {
             SceneController scenes,
             Messages messages,
             PlayerOperationLocks playerLocks,
-            PitySelector<RewardBundle> selector
+            PitySelector<RewardBundle> selector,
+            LootModelPalette lootModels
     ) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.database = Objects.requireNonNull(database, "database");
@@ -85,6 +88,7 @@ public final class OpeningCoordinator {
         this.messages = Objects.requireNonNull(messages, "messages");
         this.playerLocks = Objects.requireNonNull(playerLocks, "playerLocks");
         this.selector = Objects.requireNonNull(selector, "selector");
+        this.lootModels = Objects.requireNonNull(lootModels, "lootModels");
     }
 
     /** Makes a subsequent GUI draw use the exact model entry the player clicked. */
@@ -480,7 +484,6 @@ public final class OpeningCoordinator {
                 commit.placement(),
                 displayRewards,
                 commit.crate().openAnimation(),
-                commit.profile().lootModel(),
                 commit.crate().skipAllowed(),
                 () -> finishCommittedDraw(player, commit, null),
                 failure -> finishCommittedDraw(player, commit, failure)
@@ -496,7 +499,11 @@ public final class OpeningCoordinator {
             display = itemCodec.decode(reward.items().getFirst().itemBlob());
             display.setAmount(1);
         }
-        return new SceneReward(display, reward.definition().displayName());
+        return new SceneReward(
+                display,
+                reward.definition().displayName(),
+                lootModels.modelFor(reward.definition().rarity())
+        );
     }
 
     private void finishCommittedDraw(Player player, DrawCommit commit, Throwable sceneFailure) {

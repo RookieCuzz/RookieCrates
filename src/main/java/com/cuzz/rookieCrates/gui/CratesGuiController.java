@@ -1,5 +1,6 @@
 package com.cuzz.rookieCrates.gui;
 
+import com.cuzz.rookieCrates.config.LootModelPalette;
 import com.cuzz.rookieCrates.domain.Rarity;
 import com.cuzz.rookieCrates.gui.api.CratesGuiFacade;
 import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.CrateSettings;
@@ -45,11 +46,18 @@ public final class CratesGuiController implements Listener {
     private final JavaPlugin plugin;
     private final CratesGuiFacade facade;
     private final ChatInputManager chatInputs;
+    private final LootModelPalette lootModels;
 
-    public CratesGuiController(JavaPlugin plugin, CratesGuiFacade facade, ChatInputManager chatInputs) {
+    public CratesGuiController(
+            JavaPlugin plugin,
+            CratesGuiFacade facade,
+            ChatInputManager chatInputs,
+            LootModelPalette lootModels
+    ) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.facade = Objects.requireNonNull(facade, "facade");
         this.chatInputs = Objects.requireNonNull(chatInputs, "chatInputs");
+        this.lootModels = Objects.requireNonNull(lootModels, "lootModels");
     }
 
     public void openPlayerList(Player player, int page) {
@@ -205,10 +213,14 @@ public final class CratesGuiController implements Listener {
                 "&7右键改 S: &f" + settings.pityS()));
         inventory.setItem(6, GuiItems.item(Material.ARMOR_STAND, "&e模型与动画",
                 "&7宝箱模型: &f" + settings.crateModel(),
-                "&7奖励模型: &f" + settings.lootModel(),
+                "&7C: &f" + lootModels.modelFor(Rarity.C),
+                "&7B: &b" + lootModels.modelFor(Rarity.B),
+                "&7A: &d" + lootModels.modelFor(Rarity.A),
+                "&7S: &6" + lootModels.modelFor(Rarity.S),
                 "&7待机动画: &f" + settings.idleAnimation(),
                 "&7开箱动画: &f" + settings.openAnimation(),
-                "&7点击以 | 分隔输入四项"));
+                "&7点击修改宝箱模型与动画",
+                "&8Loot 配色在 config.yml 修改"));
         inventory.setItem(7, GuiItems.item(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, "&e交互碰撞箱",
                 "&7宽: &f" + settings.interactionWidth(),
                 "&7高: &f" + settings.interactionHeight(),
@@ -464,7 +476,7 @@ public final class CratesGuiController implements Listener {
             }
             input(player, "输入奖励显示名", displayName -> {
                 if (held != null) {
-                    RewardSettings reward = new RewardSettings(id, displayName, held, held, List.of(), 1.0D, Rarity.E, false);
+                    RewardSettings reward = new RewardSettings(id, displayName, held, held, List.of(), 1.0D, Rarity.C, false);
                     saveReward(player, crateId, reward, () -> openRewardEditor(player, crateId, id));
                     return;
                 }
@@ -476,7 +488,7 @@ public final class CratesGuiController implements Listener {
                         return;
                     }
                     RewardSettings reward = new RewardSettings(id, displayName, new ItemStack(Material.COMMAND_BLOCK),
-                            null, parsed, 1.0D, Rarity.E, false);
+                            null, parsed, 1.0D, Rarity.C, false);
                     saveReward(player, crateId, reward, () -> openRewardEditor(player, crateId, id));
                 }, () -> openAdminCrate(player, crateId, page));
             }, () -> openAdminCrate(player, crateId, page));
@@ -519,14 +531,14 @@ public final class CratesGuiController implements Listener {
     }
 
     private void inputModels(Player player, String crateId, int page) {
-        input(player, "依次输入 宝箱模型|奖励模型|待机动画|开箱动画", value -> {
+        input(player, "依次输入 宝箱模型|待机动画|开箱动画", value -> {
             String[] parts = Arrays.stream(value.split("\\|", -1)).map(String::trim).toArray(String[]::new);
-            if (parts.length != 4 || Arrays.stream(parts).anyMatch(String::isEmpty)) {
-                player.sendMessage(GuiItems.color("&c必须提供四个非空值，并用 | 分隔。"));
+            if (parts.length != 3 || Arrays.stream(parts).anyMatch(String::isEmpty)) {
+                player.sendMessage(GuiItems.color("&c必须提供三个非空值，并用 | 分隔。"));
                 openAdminCrate(player, crateId, page);
                 return;
             }
-            mutateCrate(player, crateId, settings -> withModels(settings, parts[0], parts[1], parts[2], parts[3]));
+            mutateCrate(player, crateId, settings -> withModels(settings, parts[0], parts[1], parts[2]));
         }, () -> openAdminCrate(player, crateId, page));
     }
 
@@ -857,9 +869,7 @@ public final class CratesGuiController implements Listener {
             case S -> "&6";
             case A -> "&d";
             case B -> "&b";
-            case C -> "&a";
-            case D -> "&e";
-            case E -> "&7";
+            case C -> "&7";
         };
     }
 
@@ -916,11 +926,11 @@ public final class CratesGuiController implements Listener {
                 width, height, s.crateModel(), s.lootModel(), s.idleAnimation(), s.openAnimation());
     }
 
-    private static CrateSettings withModels(CrateSettings s, String crateModel, String lootModel,
+    private static CrateSettings withModels(CrateSettings s, String crateModel,
                                             String idleAnimation, String openAnimation) {
         return new CrateSettings(s.id(), s.displayName(), s.enabled(), s.icon(), s.keyTemplate(),
                 s.singlePrice(), s.sevenPrice(), s.pityA(), s.pityS(), s.broadcastS(), s.skipAllowed(),
-                s.interactionWidth(), s.interactionHeight(), crateModel, lootModel, idleAnimation, openAnimation);
+                s.interactionWidth(), s.interactionHeight(), crateModel, s.lootModel(), idleAnimation, openAnimation);
     }
 
     private static RewardSettings withRewardItem(RewardSettings r, ItemStack icon, ItemStack item) {

@@ -5,9 +5,7 @@ public enum Rarity {
     S,
     A,
     B,
-    C,
-    D,
-    E;
+    C;
 
     public boolean isAtLeast(Rarity threshold) {
         return ordinal() <= threshold.ordinal();

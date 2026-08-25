@@ -7,10 +7,10 @@
 | 模型 ID | 文件 | 用途 | 必需动画/骨骼 |
 | --- | --- | --- | --- |
 | `default_crate` | `ModelEngine/blueprints/default_crate.bbmodel` | 默认宝箱 | `idle`、`open2` |
-| `loot_white` | `ModelEngine/blueprints/loot_white.bbmodel` | 白色奖励展示 | `idle`、`item` |
-| `loot_pink` | `ModelEngine/blueprints/loot_pink.bbmodel` | 粉色奖励展示 | `idle`、`item` |
-| `loot_blue` | `ModelEngine/blueprints/loot_blue.bbmodel` | 蓝色奖励展示 | `idle`、`item` |
-| `loot_yellow` | `ModelEngine/blueprints/loot_yellow.bbmodel` | 黄色奖励展示 | `idle`、`item` |
+| `loot_white` | `ModelEngine/blueprints/loot_white.bbmodel` | C 级白色奖励展示 | `idle`、`item` |
+| `loot_blue` | `ModelEngine/blueprints/loot_blue.bbmodel` | B 级蓝色奖励展示 | `idle`、`item` |
+| `loot_pink` | `ModelEngine/blueprints/loot_pink.bbmodel` | A 级粉色奖励展示 | `idle`、`item` |
+| `loot_yellow` | `ModelEngine/blueprints/loot_yellow.bbmodel` | S 级黄色奖励展示 | `idle`、`item` |
 
 `tag_name` 不是必需骨骼。RookieCrates 只强制要求 loot 模型存在 `item` 骨骼；如果模型额外提供带 NAMETAG 行为的 `tag_name`，插件才会显示模型名称标签。
 
@@ -30,6 +30,6 @@
 2. 手动部署时，将本目录下 `ModelEngine/blueprints` 中的五个 `.bbmodel` 文件复制到服务端的 `plugins/ModelEngine/blueprints`。
 3. 确认完整的 ModelEngine R4 插件位于服务器真正的 `plugins` 根目录。
 4. 重启服务端，让 ModelEngine 构建模型缓存和资源包。
-5. RookieCrates 默认使用 `default_crate` 和 `loot_white`；其他颜色可以作为场景配置中的 loot 模型 ID。
+5. RookieCrates 默认使用 `default_crate`，并按 `C → loot_white`、`B → loot_blue`、`A → loot_pink`、`S → loot_yellow` 自动选择奖励模型。映射可在 `config.yml` 的 `defaults.crate.models.loot-by-rarity` 修改。
 
 不要放入 `plugins/plugins` 之类的嵌套目录，否则 Paper 不会加载对应插件。

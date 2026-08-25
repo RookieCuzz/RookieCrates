@@ -204,7 +204,7 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                     profileId,
                     name + " 场景",
                     defaults.crateModel(),
-                    defaults.lootModel()
+                    defaults.lootModels().modelFor(Rarity.C)
             ));
             dao.upsertCrate(new CrateDefinition(
                     id,
@@ -567,7 +567,7 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                 crate.interactionWidth(),
                 crate.interactionHeight(),
                 profile == null ? defaults.crateModel() : profile.crateModel(),
-                profile == null ? defaults.lootModel() : profile.lootModel(),
+                profile == null ? defaults.lootModels().modelFor(Rarity.C) : profile.lootModel(),
                 crate.idleAnimation(),
                 crate.openAnimation()
         );

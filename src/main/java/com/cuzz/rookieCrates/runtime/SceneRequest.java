@@ -11,7 +11,6 @@ public record SceneRequest(
         CratePlacement placement,
         List<SceneReward> rewards,
         String openAnimation,
-        String lootModel,
         boolean skipAllowed,
         Runnable onComplete,
         Consumer<Throwable> onFailure
@@ -28,7 +27,6 @@ public record SceneRequest(
             throw new IllegalArgumentException("rewards must not contain null");
         }
         openAnimation = requireText(openAnimation, "openAnimation");
-        lootModel = requireText(lootModel, "lootModel");
         Objects.requireNonNull(onComplete, "onComplete");
         Objects.requireNonNull(onFailure, "onFailure");
     }

@@ -14,7 +14,7 @@ public record CrateDefaults(
         double interactionWidth,
         double interactionHeight,
         String crateModel,
-        String lootModel,
+        LootModelPalette lootModels,
         String idleAnimation,
         String openAnimation
 ) {
@@ -31,7 +31,7 @@ public record CrateDefaults(
         requirePositive(interactionWidth, "defaults.crate.interaction.width");
         requirePositive(interactionHeight, "defaults.crate.interaction.height");
         crateModel = requireText(crateModel, "defaults.crate.models.crate");
-        lootModel = requireText(lootModel, "defaults.crate.models.loot");
+        lootModels = Objects.requireNonNull(lootModels, "lootModels");
         idleAnimation = requireText(idleAnimation, "defaults.crate.animations.idle");
         openAnimation = requireText(openAnimation, "defaults.crate.animations.open");
     }
@@ -47,7 +47,7 @@ public record CrateDefaults(
                 config.getDouble(ROOT + "interaction.width", 1.5D),
                 config.getDouble(ROOT + "interaction.height", 2.0D),
                 config.getString(ROOT + "models.crate", "default_crate"),
-                config.getString(ROOT + "models.loot", "loot_white"),
+                LootModelPalette.load(config),
                 config.getString(ROOT + "animations.idle", "idle"),
                 config.getString(ROOT + "animations.open", "open2")
         );

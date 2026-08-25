@@ -80,7 +80,7 @@ class PitySelectorTest {
     void rejectsInvalidWeights() {
         PitySelector<String> selector = new PitySelector<>(new Random(4));
         assertThrows(IllegalArgumentException.class, () -> selector.draw(
-                List.of(new PitySelector.Candidate<>("bad", Rarity.E, 0.0D)),
+                List.of(new PitySelector.Candidate<>("bad", Rarity.C, 0.0D)),
                 new PitySelector.Progress(0, 0),
                 new PitySelector.Policy(10, 80)
         ));

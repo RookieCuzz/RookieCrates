@@ -15,7 +15,7 @@ CREATE TABLE crates (
     guarantee_a INTEGER NOT NULL DEFAULT 10 CHECK (guarantee_a > 0),
     guarantee_s INTEGER NOT NULL DEFAULT 80 CHECK (guarantee_s >= guarantee_a),
     scene_profile_id TEXT,
-    broadcast_rarity TEXT DEFAULT 'S' CHECK (broadcast_rarity IS NULL OR broadcast_rarity IN ('S', 'A', 'B', 'C', 'D', 'E')),
+    broadcast_rarity TEXT DEFAULT 'S' CHECK (broadcast_rarity IS NULL OR broadcast_rarity IN ('S', 'A', 'B', 'C')),
     skip_allowed INTEGER NOT NULL DEFAULT 1 CHECK (skip_allowed IN (0, 1)),
     interaction_width REAL NOT NULL DEFAULT 1.5 CHECK (interaction_width > 0),
     interaction_height REAL NOT NULL DEFAULT 2.0 CHECK (interaction_height > 0),
@@ -28,7 +28,7 @@ CREATE TABLE rewards (
     crate_id TEXT NOT NULL REFERENCES crates(id) ON DELETE CASCADE,
     display_name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
-    rarity TEXT NOT NULL CHECK (rarity IN ('S', 'A', 'B', 'C', 'D', 'E')),
+    rarity TEXT NOT NULL CHECK (rarity IN ('S', 'A', 'B', 'C')),
     weight REAL NOT NULL CHECK (weight >= 0),
     enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
     broadcast INTEGER NOT NULL DEFAULT 0 CHECK (broadcast IN (0, 1))
@@ -116,7 +116,7 @@ CREATE TABLE open_results (
     transaction_id TEXT NOT NULL REFERENCES open_transactions(id) ON DELETE CASCADE,
     result_index INTEGER NOT NULL CHECK (result_index BETWEEN 1 AND 7),
     reward_id TEXT NOT NULL,
-    rarity TEXT NOT NULL CHECK (rarity IN ('S', 'A', 'B', 'C', 'D', 'E')),
+    rarity TEXT NOT NULL CHECK (rarity IN ('S', 'A', 'B', 'C')),
     delivered INTEGER NOT NULL DEFAULT 0 CHECK (delivered IN (0, 1)),
     PRIMARY KEY (transaction_id, result_index)
 );

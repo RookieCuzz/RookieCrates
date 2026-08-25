@@ -94,7 +94,7 @@ class SQLiteDatabaseTest {
     void foreignKeysAndTransactionsPreventPartialConfiguration() {
         CompletionException foreignKeyFailure = assertThrows(CompletionException.class, () ->
                 database.run(dao -> dao.upsertReward(new RewardDefinition(
-                        "orphan", "missing", "Orphan", "", Rarity.E, 1, true
+                        "orphan", "missing", "Orphan", "", Rarity.C, 1, true
                 ))).join()
         );
         assertInstanceOf(SQLException.class, foreignKeyFailure.getCause());
@@ -133,13 +133,13 @@ class SQLiteDatabaseTest {
         long deliveryId = database.transaction(dao -> {
             seedCrate(dao);
             dao.upsertReward(new RewardDefinition(
-                    "stone", "basic", "Stone", "", Rarity.E, 10, true
+                    "stone", "basic", "Stone", "", Rarity.C, 10, true
             ));
             dao.createTransaction(new OpenTransaction(
                     transactionId, player, "basic", 7, OpenTransactionStatus.PENDING, 100, null, null
             ));
             for (int index = 1; index <= 7; index++) {
-                dao.addOpenResult(new OpenResult(transactionId, index, "stone", Rarity.E, false));
+                dao.addOpenResult(new OpenResult(transactionId, index, "stone", Rarity.C, false));
             }
             long id = dao.enqueueDelivery(new PendingDelivery(
                     0, transactionId, 1, player, "stone", new byte[]{1, 2}, 64,
@@ -387,7 +387,7 @@ class SQLiteDatabaseTest {
                     noPayload, player, "basic", 1,
                     OpenTransactionStatus.DELIVERING, 103, null, null
             ));
-            dao.addOpenResult(new OpenResult(noPayload, 1, "empty", Rarity.E, false));
+            dao.addOpenResult(new OpenResult(noPayload, 1, "empty", Rarity.C, false));
             return dao.completeDeliverableTransactions(player, 200);
         }).join();
 

@@ -136,13 +136,13 @@ public final class SceneSession {
             SceneReward reward = request.rewards().get(index);
             RuntimeModelHandle lootModel = RuntimeModelHandle.spawnPrivate(
                     positions.get(index),
-                    request.lootModel(),
+                    reward.lootModel(),
                     player
             );
             lootModels.add(lootModel);
             lootModel.configureLoot(reward.item(), reward.displayName());
             if (!lootModel.playAnimation("idle", true)) {
-                throw new IllegalArgumentException("Missing idle animation for loot model: " + request.lootModel());
+                throw new IllegalArgumentException("Missing idle animation for loot model: " + reward.lootModel());
             }
         }
 

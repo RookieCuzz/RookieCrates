@@ -1,6 +1,7 @@
 package com.cuzz.rookieCrates;
 
 import com.cuzz.rookieCrates.config.CrateDefaults;
+import com.cuzz.rookieCrates.config.LootModelPalette;
 import com.cuzz.rookieCrates.economy.VaultEconomyGateway;
 import com.cuzz.rookieCrates.gui.CratesGuiController;
 import com.cuzz.rookieCrates.gui.CratesGuiModule;
@@ -43,6 +44,7 @@ public final class RookieCrates extends JavaPlugin {
             getConfig().options().copyDefaults(true);
             saveConfig();
             CrateDefaults crateDefaults = CrateDefaults.load(getConfig());
+            LootModelPalette lootModels = crateDefaults.lootModels();
 
             Path databaseFile = getDataFolder().toPath()
                     .resolve(getConfig().getString("database.file", "rookiecrates.db"))
@@ -95,7 +97,8 @@ public final class RookieCrates extends JavaPlugin {
                     sceneController,
                     messages,
                     playerLocks,
-                    new PitySelector<>(new Random())
+                    new PitySelector<>(new Random()),
+                    lootModels
             );
             ConfigurationTransferService transfers = new ConfigurationTransferService(
                     database,
@@ -115,7 +118,7 @@ public final class RookieCrates extends JavaPlugin {
                     crateDefaults
             );
 
-            CratesGuiController gui = CratesGuiModule.install(this, facade);
+            CratesGuiController gui = CratesGuiModule.install(this, facade, lootModels);
             crateRuntime.setInteractionFacade((player, interaction) -> {
                 if (!player.hasPermission(CratesGuiController.USE_PERMISSION)) {
                     messages.send(player, "no-permission");
