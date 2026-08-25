@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /** Small, idempotently removable wrapper around a ModelEngine dummy. */
 public final class RuntimeModelHandle {
@@ -52,34 +53,91 @@ public final class RuntimeModelHandle {
 
         Dummy<?> dummy = new Dummy<>();
         ModeledEntity modeledEntity = null;
+        ActiveModel activeModel = null;
+        String registeredModelId = null;
+        boolean attached = false;
         try {
             dummy.setDetectingPlayers(viewer == null);
             dummy.syncLocation(location.clone());
             modeledEntity = ModelEngineAPI.createModeledEntity((BaseEntity<?>) dummy);
-            ActiveModel activeModel = Objects.requireNonNull(
+            activeModel = Objects.requireNonNull(
                     ModelEngineAPI.createActiveModel(modelId),
                     "Unknown ModelEngine model: " + modelId
             );
+            registeredModelId = activeModel.getBlueprint().getName();
             activeModel.setCanHurt(false);
             activeModel.setSkyLight(15);
             activeModel.setBlockLight(15);
-            if (modeledEntity.addModel(activeModel, true).isEmpty()) {
-                throw new IllegalStateException("ModelEngine rejected model: " + modelId);
-            }
+            attachModel(modeledEntity, activeModel, registeredModelId);
+            attached = true;
             if (viewer != null) {
                 dummy.setForceViewing(viewer, true);
             }
-            return new RuntimeModelHandle(dummy, modeledEntity, activeModel, modelId);
+            return new RuntimeModelHandle(dummy, modeledEntity, activeModel, registeredModelId);
         } catch (RuntimeException exception) {
-            if (modeledEntity != null) {
-                try {
-                    modeledEntity.markRemoved();
-                } finally {
-                    ModelEngineAPI.removeModeledEntity(dummy.getUUID());
-                }
-            }
+            cleanupFailedSpawn(dummy, modeledEntity, activeModel, registeredModelId, attached, exception);
             throw exception;
         }
+    }
+
+    private static void cleanupFailedSpawn(
+            Dummy<?> dummy,
+            ModeledEntity modeledEntity,
+            ActiveModel activeModel,
+            String registeredModelId,
+            boolean attached,
+            RuntimeException original
+    ) {
+        if (modeledEntity == null) {
+            destroySuppressing(activeModel, original);
+            return;
+        }
+        try {
+            if (attached && registeredModelId != null) {
+                try {
+                    modeledEntity.removeModel(registeredModelId)
+                            .ifPresent(model -> destroySuppressing(model, original));
+                } catch (RuntimeException cleanupFailure) {
+                    original.addSuppressed(cleanupFailure);
+                }
+            } else {
+                destroySuppressing(activeModel, original);
+            }
+            try {
+                modeledEntity.markRemoved();
+            } catch (RuntimeException cleanupFailure) {
+                original.addSuppressed(cleanupFailure);
+            }
+        } finally {
+            try {
+                ModelEngineAPI.removeModeledEntity(dummy.getUUID());
+            } catch (RuntimeException cleanupFailure) {
+                original.addSuppressed(cleanupFailure);
+            }
+        }
+    }
+
+    private static void destroySuppressing(ActiveModel model, RuntimeException original) {
+        if (model == null) {
+            return;
+        }
+        try {
+            model.destroy();
+        } catch (RuntimeException cleanupFailure) {
+            original.addSuppressed(cleanupFailure);
+        }
+    }
+
+    /**
+     * ModelEngine returns the model that was replaced, not the model just added. Therefore an
+     * empty Optional is the normal first-add result. Verify attachment through getModel instead.
+     */
+    static void attachModel(ModeledEntity modeledEntity, ActiveModel activeModel, String modelId) {
+        Optional<ActiveModel> replaced = modeledEntity.addModel(activeModel, true);
+        if (modeledEntity.getModel(modelId).filter(attached -> attached == activeModel).isEmpty()) {
+            throw new IllegalStateException("ModelEngine rejected model: " + modelId);
+        }
+        replaced.filter(previous -> previous != activeModel).ifPresent(ActiveModel::destroy);
     }
 
     public boolean playAnimation(String animationId, boolean loop) {

@@ -1,6 +1,6 @@
 # RookieCrates ModelEngine 模型包
 
-这里保存 RookieCrates 当前场景需要的 ModelEngine R4 蓝图。此目录是源码仓库中唯一的模型源目录，Maven 构建服务器部署包时会自动将这些文件放入 `plugins/ModelEngine/blueprints`。
+这里保存 RookieCrates 当前场景需要的 ModelEngine R4.1.0 蓝图。此目录是源码仓库中唯一的模型源目录，Maven 构建服务器部署包时会自动将这些文件放入 `plugins/ModelEngine/blueprints`。
 
 ## 模型 ID
 
@@ -28,7 +28,7 @@
 
 1. 推荐运行 `mvn clean package` 后，将生成的 `*-server-package.zip` 直接解压到服务器根目录。
 2. 手动部署时，将本目录下 `ModelEngine/blueprints` 中的五个 `.bbmodel` 文件复制到服务端的 `plugins/ModelEngine/blueprints`。
-3. 确认完整的 ModelEngine R4 插件位于服务器真正的 `plugins` 根目录。
+3. 确认完整的 ModelEngine R4.1.0 插件位于服务器真正的 `plugins` 根目录。
 4. 重启服务端，让 ModelEngine 构建模型缓存和资源包。
 5. RookieCrates 默认使用 `default_crate`，并按 `C → loot_white`、`B → loot_blue`、`A → loot_pink`、`S → loot_yellow` 自动选择奖励模型。映射可在 `config.yml` 的 `defaults.crate.models.loot-by-rarity` 修改。
 

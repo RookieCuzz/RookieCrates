@@ -151,7 +151,7 @@
             <artifactId>meg</artifactId>
             <version>1.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/libs/ModelEngine-4.0.7.jar</systemPath>
+            <systemPath>${project.basedir}/libs/ModelEngine-4.1.0.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
