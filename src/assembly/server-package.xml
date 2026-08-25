@@ -25,6 +25,11 @@
             <destName>配置.md</destName>
         </file>
         <file>
+            <source>实机配置与测试.md</source>
+            <outputDirectory>docs</outputDirectory>
+            <destName>实机配置与测试.md</destName>
+        </file>
+        <file>
             <source>model-assets/README.md</source>
             <outputDirectory>docs</outputDirectory>
             <destName>模型.md</destName>

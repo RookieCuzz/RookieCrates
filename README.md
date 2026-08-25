@@ -29,7 +29,8 @@ RookieCrates/
 ├─ src/test/         单元测试与契约测试
 ├─ model-assets/     统一命名的 ModelEngine 蓝图
 ├─ src/assembly/     可部署服务器压缩包规则
-└─ 配置.md           服主配置手册
+├─ 配置.md           服主配置手册
+└─ 实机配置与测试.md 测试服部署与验收手册
 ```
 
 ## 构建
@@ -47,4 +48,4 @@ mvn clean package
 
 部署包可以直接解压到服务器根目录；必须另外安装完整的 ModelEngine R4。金币价格大于 `0` 时还需要 Vault 和经济插件。
 
-详细配置步骤见 [`配置.md`](配置.md)，模型清单见 [`model-assets/README.md`](model-assets/README.md)。
+详细配置步骤见 [`配置.md`](配置.md)，实机验收流程见 [`实机配置与测试.md`](实机配置与测试.md)，模型清单见 [`model-assets/README.md`](model-assets/README.md)。
