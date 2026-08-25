@@ -1,0 +1,15 @@
+# Maven build output
+/target/
+/dependency-reduced-pom.xml
+
+# IntelliJ IDEA local files
+/.idea/
+/*.iml
+
+# Server/runtime data
+/*.db
+/plugins/
+
+# OS files
+.DS_Store
+Thumbs.db

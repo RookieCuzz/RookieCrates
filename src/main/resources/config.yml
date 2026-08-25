@@ -1,0 +1,55 @@
+# RookieCrates 的宝箱、奖池、场景点和玩家数据保存在 SQLite 中。
+# 本文件只保存全局选项，以及通过管理 GUI 新建宝箱时使用的默认值。
+
+database:
+  file: rookiecrates.db
+  busy-timeout-ms: 5000
+
+defaults:
+  crate:
+    # 新建宝箱始终先保持禁用，完成钥匙、奖池、场景和入口配置后再手动启用。
+    single-price: 0.0
+    seven-price: 0.0
+    guarantee-a: 10
+    guarantee-s: 80
+    skip-allowed: true
+    interaction:
+      width: 1.5
+      height: 2.0
+    models:
+      crate: default_crate
+      loot: loot_white
+    animations:
+      idle: idle
+      open: open2
+
+legacy-migration:
+  import-old-scene: true
+  completed: false
+  default-crate-id: default
+
+opening:
+  reveal-delay-ticks: 95
+  skip-after-ticks: 40
+  reveal-duration-ticks: 100
+
+broadcast:
+  # 新建宝箱默认使用的全服广播稀有度门槛。
+  minimum-rarity: S
+  format: '<gold><player></gold> 在 <yellow><crate></yellow> 中抽到了 <light_purple><reward></light_purple>！'
+
+gui:
+  player-title: '<dark_gray>宝箱：<crate>'
+  result-title: '<dark_gray>开箱结果'
+  pending-title: '<dark_gray>待领取奖励'
+  admin-title: '<dark_gray>RookieCrates 管理'
+
+messages:
+  prefix: '<gray>[<gold>RookieCrates</gold>]</gray> '
+  loading: '<yellow>正在读取宝箱数据…</yellow>'
+  busy: '<red>你已有一个开箱或数据操作正在进行。</red>'
+  no-permission: '<red>你没有权限使用这个宝箱。</red>'
+  no-economy: '<red>服务器未提供 Vault 经济服务，当前宝箱无法扣款。</red>'
+  insufficient-keys: '<red>钥匙不足。</red>'
+  insufficient-money: '<red>余额不足。</red>'
+  pending-created: '<yellow>背包空间不足，未放入的奖励已进入待领取列表。</yellow>'

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.3 https://maven.apache.org/xsd/assembly-1.1.3.xsd">
+    <id>server-package</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+
+    <files>
+        <file>
+            <source>${project.build.directory}/${project.build.finalName}.jar</source>
+            <outputDirectory>plugins</outputDirectory>
+            <destName>RookieCrates.jar</destName>
+        </file>
+        <file>
+            <source>src/main/resources/config.yml</source>
+            <outputDirectory>plugins/RookieCrates</outputDirectory>
+            <destName>config.yml</destName>
+        </file>
+        <file>
+            <source>配置.md</source>
+            <outputDirectory>docs</outputDirectory>
+            <destName>配置.md</destName>
+        </file>
+        <file>
+            <source>model-assets/README.md</source>
+            <outputDirectory>docs</outputDirectory>
+            <destName>模型.md</destName>
+        </file>
+    </files>
+
+    <fileSets>
+        <fileSet>
+            <directory>model-assets/ModelEngine/blueprints</directory>
+            <outputDirectory>plugins/ModelEngine/blueprints</outputDirectory>
+            <includes>
+                <include>*.bbmodel</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

@@ -1,0 +1,4 @@
+# version=classpath resource
+1=db/V001__initial.sql
+2=db/V002__scene_recovery_state.sql
+3=db/V003__rename_default_crate_model.sql

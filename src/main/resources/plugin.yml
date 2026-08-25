@@ -1,8 +1,21 @@
 name: RookieCrates
-version: '1.0-SNAPSHOT'
+version: '${project.version}'
 main: com.cuzz.rookieCrates.RookieCrates
 api-version: '1.21'
+depend: [ModelEngine]
+softdepend: [Vault]
 commands:
-  RookieCrates:
-    description: "RookieCrates"
-    permission: "RookieCrates.op"
+  rookiecrates:
+    aliases: [rc, crates]
+    description: RookieCrates player and administration command
+    usage: /<command> [open|claim|admin|key|place|remove|scene]
+permissions:
+  rookiecrates.use:
+    description: Open configured RookieCrates and use player menus
+    default: true
+  rookiecrates.admin:
+    description: Manage crates, rewards, scenes, keys and exports
+    default: op
+  rookiecrates.open.*:
+    description: Open any RookieCrates crate
+    default: true
