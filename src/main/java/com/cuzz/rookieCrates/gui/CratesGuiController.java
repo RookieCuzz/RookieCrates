@@ -19,12 +19,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,22 +49,33 @@ public final class CratesGuiController implements Listener {
     public static final String ADMIN_PERMISSION = "rookiecrates.admin";
     private static final int LIST_PAGE_SIZE = 45;
     private static final int REWARD_PAGE_SIZE = 27;
+    private static final int REWARD_ITEMS_FIRST_SLOT = 9;
+    private static final int REWARD_ITEMS_LAST_SLOT = 35;
 
     private final JavaPlugin plugin;
     private final CratesGuiFacade facade;
     private final ChatInputManager chatInputs;
     private final LootModelPalette lootModels;
+    private final double defaultLootItemScale;
+    private final Map<UUID, RewardItemsDraft> rewardItemDrafts = new HashMap<>();
 
     public CratesGuiController(
             JavaPlugin plugin,
             CratesGuiFacade facade,
             ChatInputManager chatInputs,
-            LootModelPalette lootModels
+            LootModelPalette lootModels,
+            double defaultLootItemScale
     ) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.facade = Objects.requireNonNull(facade, "facade");
         this.chatInputs = Objects.requireNonNull(chatInputs, "chatInputs");
         this.lootModels = Objects.requireNonNull(lootModels, "lootModels");
+        if (!Double.isFinite(defaultLootItemScale)
+                || defaultLootItemScale <= 0.0D
+                || defaultLootItemScale > 4.0D) {
+            throw new IllegalArgumentException("default loot item scale must be greater than 0 and at most 4");
+        }
+        this.defaultLootItemScale = defaultLootItemScale;
     }
 
     public void openPlayerList(Player player, int page) {
@@ -158,8 +172,14 @@ public final class CratesGuiController implements Listener {
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)
                 || !holder.viewer().equals(player.getUniqueId())
-                || event.getRawSlot() < 0
-                || event.getRawSlot() >= event.getView().getTopInventory().getSize()) {
+                || event.getRawSlot() < 0) {
+            return;
+        }
+        if (holder.screen() == Screen.REWARD_ITEMS) {
+            clickRewardItems(player, holder, event);
+            return;
+        }
+        if (event.getRawSlot() >= event.getView().getTopInventory().getSize()) {
             return;
         }
         int slot = event.getRawSlot();
@@ -169,9 +189,32 @@ public final class CratesGuiController implements Listener {
             case ADMIN_LIST -> clickAdminList(player, holder, slot);
             case ADMIN_CRATE -> clickAdminCrate(player, holder, slot, event.isLeftClick(), event.isRightClick(), event.isShiftClick());
             case REWARD_EDIT -> clickRewardEdit(player, holder, slot, event.isLeftClick(), event.isRightClick());
+            case REWARD_ITEMS -> throw new IllegalStateException("Reward item clicks are handled before slot filtering");
             case SCENE -> clickScene(player, holder, slot,
                     event.isLeftClick(), event.isRightClick(), event.isShiftClick());
             case SCENE_FINE -> clickSceneFine(player, holder, slot, event.isShiftClick());
+        }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof ScreenHolder holder
+                && holder.screen() == Screen.REWARD_ITEMS) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getInventory().getHolder() instanceof ScreenHolder holder)
+                || holder.screen() != Screen.REWARD_ITEMS
+                || !(event.getPlayer() instanceof Player player)
+                || !holder.viewer().equals(player.getUniqueId())) {
+            return;
+        }
+        RewardItemsDraft draft = rewardItemDrafts.get(player.getUniqueId());
+        if (draft != null && draft.matches(holder)) {
+            saveRewardItemsDraft(player, draft);
         }
     }
 
@@ -268,8 +311,16 @@ public final class CratesGuiController implements Listener {
         Inventory inventory = holder.getInventory();
         GuiItems.fill(inventory);
         inventory.setItem(4, rewardIcon(new RewardView(reward, 0.0D), true));
-        inventory.setItem(10, GuiItems.decorate(reward.itemReward(), "&e物品奖励",
-                List.of("&7左键：设为主手物品", "&7右键：移除物品（必须保留命令）")));
+        ItemStack contentIcon = reward.itemReward() == null
+                ? new ItemStack(Material.CHEST)
+                : reward.itemReward();
+        inventory.setItem(10, GuiItems.decorate(contentIcon, "&e物品内容",
+                List.of(
+                        "&7已配置: &f" + reward.itemRewards().size() + "&7/"
+                                + RewardSettings.MAX_ITEM_STACKS + " 组",
+                        "&7点击打开物品内容编辑器",
+                        "&8第一个物品用于 Loot 模型展示"
+                )));
         inventory.setItem(12, GuiItems.item(Material.NAME_TAG, "&e名称", "&f" + reward.displayName(), "&7点击聊天输入"));
         inventory.setItem(14, GuiItems.item(Material.COMPARATOR, "&e权重", "&f" + reward.weight(), "&7点击聊天输入正数"));
         inventory.setItem(16, GuiItems.item(Material.NETHER_STAR, "&e稀有度", "&f" + reward.rarity(), "&7点击循环切换"));
@@ -284,9 +335,53 @@ public final class CratesGuiController implements Listener {
         inventory.setItem(20, GuiItems.decorate(new ItemStack(Material.COMMAND_BLOCK), "&e控制台命令", commandLore));
         inventory.setItem(22, GuiItems.item(reward.broadcast() ? Material.BELL : Material.GRAY_DYE,
                 "&e独立广播: " + yesNo(reward.broadcast()), "&7点击切换"));
+        inventory.setItem(24, GuiItems.item(Material.ITEM_FRAME, "&e展示缩放",
+                "&f" + reward.displayScale(),
+                "&7点击聊天输入（0 < 缩放 <= 4）",
+                "&7只影响该奖品在 Loot 模型上的大小"));
         inventory.setItem(27, GuiItems.item(Material.OAK_DOOR, "&e返回奖池"));
         inventory.setItem(35, GuiItems.item(Material.TNT, "&c删除奖励", "&7点击后输入 DELETE 确认"));
         player.openInventory(inventory);
+    }
+
+    private void renderRewardItems(Player player, RewardItemsDraft draft) {
+        ScreenHolder holder = screen(
+                player,
+                Screen.REWARD_ITEMS,
+                draft.crateId,
+                draft.rewardId,
+                0,
+                45,
+                "&4物品内容: " + draft.settings.displayName()
+        );
+        Inventory inventory = holder.getInventory();
+        ItemStack filler = GuiItems.item(Material.BLACK_STAINED_GLASS_PANE, " ");
+        for (int slot = 0; slot < 9; slot++) {
+            inventory.setItem(slot, filler);
+        }
+        for (int slot = 36; slot < 45; slot++) {
+            inventory.setItem(slot, filler);
+        }
+        inventory.setItem(40, GuiItems.item(Material.OAK_DOOR, "&a保存并返回",
+                "&7点击保存物品内容并返回奖励设置",
+                "&7直接关闭界面也会自动保存"));
+        renderRewardItemSlots(inventory, draft);
+        player.openInventory(inventory);
+    }
+
+    private void renderRewardItemSlots(Inventory inventory, RewardItemsDraft draft) {
+        inventory.setItem(4, GuiItems.item(Material.CHEST, "&e奖励物品内容",
+                "&7当前: &f" + draft.items.size() + "&7/" + RewardSettings.MAX_ITEM_STACKS + " 组",
+                "&7点击下方背包物品：添加一份副本",
+                "&7左键上方物品：取回副本并移除",
+                "&7右键上方物品：仅取回副本",
+                "&8物品数量、名称、Lore、附魔和组件都会保留"));
+        for (int slot = REWARD_ITEMS_FIRST_SLOT; slot <= REWARD_ITEMS_LAST_SLOT; slot++) {
+            inventory.clear(slot);
+        }
+        for (int index = 0; index < draft.items.size(); index++) {
+            inventory.setItem(REWARD_ITEMS_FIRST_SLOT + index, draft.items.get(index).clone());
+        }
     }
 
     private void renderScene(Player player, String crateId, Map<ScenePoint, ScenePointLocation> configured) {
@@ -497,23 +592,7 @@ public final class CratesGuiController implements Listener {
         String crateId = holder.crateId();
         String rewardId = holder.rewardId();
         switch (slot) {
-            case 10 -> {
-                if (leftClick) {
-                    ItemStack hand = usableMainHand(player);
-                    if (hand == null) {
-                        player.sendMessage(GuiItems.color("&c请先把奖励物品拿在主手。"));
-                    } else {
-                        mutateReward(player, crateId, rewardId, reward -> withRewardItem(reward, hand, hand));
-                    }
-                } else if (rightClick) {
-                    mutateReward(player, crateId, rewardId, reward -> {
-                        if (reward.consoleCommands().isEmpty()) {
-                            throw new IllegalArgumentException("至少保留物品或一条命令");
-                        }
-                        return withRewardItem(reward, reward.icon(), null);
-                    });
-                }
-            }
+            case 10 -> openRewardItems(player, crateId, rewardId);
             case 12 -> input(player, "输入奖励显示名", value ->
                     mutateReward(player, crateId, rewardId, reward -> withRewardName(reward, value)),
                     () -> openRewardEditor(player, crateId, rewardId));
@@ -530,11 +609,82 @@ public final class CratesGuiController implements Listener {
                     updateRewardCommands(player, crateId, rewardId, value),
                     () -> openRewardEditor(player, crateId, rewardId));
             case 22 -> mutateReward(player, crateId, rewardId, reward -> withRewardBroadcast(reward, !reward.broadcast()));
+            case 24 -> input(player, "输入该奖品的展示缩放（0 < 缩放 <= 4）", value -> {
+                try {
+                    double scale = positiveDouble(value, "展示缩放");
+                    if (scale > 4.0D) {
+                        throw new IllegalArgumentException("展示缩放不能大于 4。");
+                    }
+                    mutateReward(player, crateId, rewardId, reward -> withRewardDisplayScale(reward, scale));
+                } catch (IllegalArgumentException exception) {
+                    inputError(player, exception, () -> openRewardEditor(player, crateId, rewardId));
+                }
+            }, () -> openRewardEditor(player, crateId, rewardId));
             case 27 -> openAdminCrate(player, crateId, 0);
             case 35 -> confirmDeleteReward(player, crateId, rewardId);
             default -> {
             }
         }
+    }
+
+    private void clickRewardItems(Player player, ScreenHolder holder, InventoryClickEvent event) {
+        if (!requirePermission(player, ADMIN_PERMISSION)) {
+            return;
+        }
+        RewardItemsDraft draft = rewardItemDrafts.get(player.getUniqueId());
+        if (draft == null || !draft.matches(holder) || draft.saving) {
+            player.sendMessage(GuiItems.color("&c物品编辑会话已经失效，请重新打开。"));
+            player.closeInventory();
+            return;
+        }
+
+        int rawSlot = event.getRawSlot();
+        int topSize = event.getView().getTopInventory().getSize();
+        if (rawSlot < topSize) {
+            if (rawSlot == 40) {
+                draft.returnToEditor = true;
+                player.closeInventory();
+                return;
+            }
+            if (rawSlot < REWARD_ITEMS_FIRST_SLOT || rawSlot > REWARD_ITEMS_LAST_SLOT) {
+                return;
+            }
+            int index = rawSlot - REWARD_ITEMS_FIRST_SLOT;
+            if (index >= draft.items.size()) {
+                return;
+            }
+            ItemStack configured = draft.items.get(index).clone();
+            if (event.isRightClick()) {
+                giveConfiguredItemCopy(player, configured);
+                return;
+            }
+            if (!event.isLeftClick()) {
+                return;
+            }
+            if (draft.items.size() == 1 && draft.settings.consoleCommands().isEmpty()) {
+                player.sendMessage(GuiItems.color("&c至少保留一个奖励物品或一条命令。"));
+                return;
+            }
+            draft.items.remove(index);
+            giveConfiguredItemCopy(player, configured);
+            renderRewardItemSlots(event.getView().getTopInventory(), draft);
+            return;
+        }
+
+        if (!event.isLeftClick() && !event.isRightClick()) {
+            return;
+        }
+        ItemStack clicked = event.getCurrentItem();
+        if (clicked == null || clicked.getType().isAir() || clicked.getAmount() <= 0) {
+            return;
+        }
+        if (draft.items.size() >= RewardSettings.MAX_ITEM_STACKS) {
+            player.sendMessage(GuiItems.color("&c一个奖励最多配置 "
+                    + RewardSettings.MAX_ITEM_STACKS + " 组物品。"));
+            return;
+        }
+        draft.items.add(clicked.clone());
+        renderRewardItemSlots(event.getView().getTopInventory(), draft);
     }
 
     private void clickScene(
@@ -763,7 +913,10 @@ public final class CratesGuiController implements Listener {
             }
             input(player, "输入奖励显示名", displayName -> {
                 if (held != null) {
-                    RewardSettings reward = new RewardSettings(id, displayName, held, held, List.of(), 1.0D, Rarity.C, false);
+                    RewardSettings reward = new RewardSettings(
+                            id, displayName, held, List.of(held), List.of(), 1.0D,
+                            defaultLootItemScale, Rarity.C, false
+                    );
                     saveReward(player, crateId, reward, () -> openRewardEditor(player, crateId, id));
                     return;
                 }
@@ -775,7 +928,7 @@ public final class CratesGuiController implements Listener {
                         return;
                     }
                     RewardSettings reward = new RewardSettings(id, displayName, new ItemStack(Material.COMMAND_BLOCK),
-                            null, parsed, 1.0D, Rarity.C, false);
+                            List.of(), parsed, 1.0D, defaultLootItemScale, Rarity.C, false);
                     saveReward(player, crateId, reward, () -> openRewardEditor(player, crateId, id));
                 }, () -> openAdminCrate(player, crateId, page));
             }, () -> openAdminCrate(player, crateId, page));
@@ -863,6 +1016,87 @@ public final class CratesGuiController implements Listener {
         });
     }
 
+    private void openRewardItems(Player player, String crateId, String rewardId) {
+        showLoading(player, Screen.REWARD_ITEMS, crateId, 0);
+        await(player, () -> facade.getCrate(crateId, player.getUniqueId()), optional -> {
+            Optional<RewardSettings> reward = optional.stream()
+                    .flatMap(crate -> crate.rewards().stream())
+                    .map(RewardView::settings)
+                    .filter(settings -> settings.id().equalsIgnoreCase(rewardId))
+                    .findFirst();
+            if (reward.isEmpty()) {
+                player.sendMessage(GuiItems.color("&c奖励不存在：" + rewardId));
+                openAdminCrate(player, crateId, 0);
+                return;
+            }
+            RewardItemsDraft draft = new RewardItemsDraft(crateId, reward.get());
+            rewardItemDrafts.put(player.getUniqueId(), draft);
+            renderRewardItems(player, draft);
+        }, () -> openRewardEditor(player, crateId, rewardId));
+    }
+
+    private void saveRewardItemsDraft(Player player, RewardItemsDraft draft) {
+        if (draft.saving) {
+            return;
+        }
+        draft.saving = true;
+        RewardSettings updated;
+        try {
+            updated = withRewardItems(draft.settings, draft.items);
+        } catch (RuntimeException exception) {
+            draft.saving = false;
+            draft.returnToEditor = false;
+            inputError(player, exception, () -> renderRewardItems(player, draft));
+            return;
+        }
+
+        facade.saveReward(draft.crateId, updated).whenComplete((result, throwable) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    draft.saving = false;
+                    if (throwable != null) {
+                        if (player.isOnline()) {
+                            reportFailure(player, throwable);
+                            draft.returnToEditor = false;
+                            renderRewardItems(player, draft);
+                        } else {
+                            rewardItemDrafts.remove(player.getUniqueId(), draft);
+                        }
+                        return;
+                    }
+                    if (result == null || !result.success()) {
+                        if (player.isOnline()) {
+                            String message = result == null ? "保存返回了空结果。" : result.message();
+                            player.sendMessage(GuiItems.color("&c物品内容保存失败：" + message));
+                            draft.returnToEditor = false;
+                            renderRewardItems(player, draft);
+                        } else {
+                            rewardItemDrafts.remove(player.getUniqueId(), draft);
+                        }
+                        return;
+                    }
+
+                    rewardItemDrafts.remove(player.getUniqueId(), draft);
+                    if (!player.isOnline()) {
+                        return;
+                    }
+                    if (!result.message().isBlank()) {
+                        player.sendMessage(GuiItems.color("&a" + result.message()));
+                    }
+                    if (draft.returnToEditor) {
+                        openRewardEditor(player, draft.crateId, draft.rewardId);
+                    }
+                })
+        );
+    }
+
+    private static void giveConfiguredItemCopy(Player player, ItemStack item) {
+        Map<Integer, ItemStack> leftovers = player.getInventory().addItem(item.clone());
+        leftovers.values().forEach(leftover -> player.getWorld().dropItemNaturally(
+                player.getLocation(),
+                leftover
+        ));
+    }
+
     private void mutateCrate(Player player, String crateId, UnaryOperator<CrateSettings> operation) {
         showLoading(player, Screen.ADMIN_CRATE, crateId, 0);
         await(player, () -> facade.getCrate(crateId, player.getUniqueId()), optional -> {
@@ -908,7 +1142,7 @@ public final class CratesGuiController implements Listener {
     private void updateRewardCommands(Player player, String crateId, String rewardId, String raw) {
         mutateReward(player, crateId, rewardId, reward -> {
             List<String> parsed = raw.equalsIgnoreCase("none") ? List.of() : commands(raw);
-            if (parsed.isEmpty() && reward.itemReward() == null) {
+            if (parsed.isEmpty() && reward.itemRewards().isEmpty()) {
                 throw new IllegalArgumentException("至少保留物品或一条命令");
             }
             return withRewardCommands(reward, parsed);
@@ -996,8 +1230,9 @@ public final class CratesGuiController implements Listener {
         lore.add("&7ID: &f" + settings.id());
         lore.add("&7稀有度: &f" + settings.rarity());
         lore.add("&7权重: &f" + settings.weight());
+        lore.add("&7展示缩放: &f" + settings.displayScale());
         lore.add("&7概率: &f" + String.format(Locale.ROOT, "%.4f%%", reward.probability() * 100.0D));
-        lore.add("&7物品: " + (settings.itemReward() == null ? "&c无" : "&a有"));
+        lore.add("&7物品组数: &f" + settings.itemRewards().size());
         lore.add("&7命令数: &f" + settings.consoleCommands().size());
         lore.add("&7广播: " + yesNo(settings.broadcast()));
         if (admin) {
@@ -1231,34 +1466,60 @@ public final class CratesGuiController implements Listener {
                 singleOpenAnimation, sevenOpenAnimation);
     }
 
-    private static RewardSettings withRewardItem(RewardSettings r, ItemStack icon, ItemStack item) {
-        return new RewardSettings(r.id(), r.displayName(), icon, item, r.consoleCommands(),
-                r.weight(), r.rarity(), r.broadcast());
+    private static RewardSettings withRewardItems(RewardSettings r, List<ItemStack> items) {
+        ItemStack icon = items.isEmpty() ? r.icon() : items.getFirst();
+        return new RewardSettings(r.id(), r.displayName(), icon, items, r.consoleCommands(),
+                r.weight(), r.displayScale(), r.rarity(), r.broadcast());
     }
 
     private static RewardSettings withRewardName(RewardSettings r, String value) {
-        return new RewardSettings(r.id(), value, r.icon(), r.itemReward(), r.consoleCommands(),
-                r.weight(), r.rarity(), r.broadcast());
+        return new RewardSettings(r.id(), value, r.icon(), r.itemRewards(), r.consoleCommands(),
+                r.weight(), r.displayScale(), r.rarity(), r.broadcast());
     }
 
     private static RewardSettings withRewardWeight(RewardSettings r, double value) {
-        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemReward(), r.consoleCommands(),
-                value, r.rarity(), r.broadcast());
+        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemRewards(), r.consoleCommands(),
+                value, r.displayScale(), r.rarity(), r.broadcast());
+    }
+
+    private static RewardSettings withRewardDisplayScale(RewardSettings r, double value) {
+        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemRewards(), r.consoleCommands(),
+                r.weight(), value, r.rarity(), r.broadcast());
     }
 
     private static RewardSettings withRewardRarity(RewardSettings r, Rarity value) {
-        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemReward(), r.consoleCommands(),
-                r.weight(), value, r.broadcast());
+        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemRewards(), r.consoleCommands(),
+                r.weight(), r.displayScale(), value, r.broadcast());
     }
 
     private static RewardSettings withRewardCommands(RewardSettings r, List<String> value) {
-        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemReward(), value,
-                r.weight(), r.rarity(), r.broadcast());
+        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemRewards(), value,
+                r.weight(), r.displayScale(), r.rarity(), r.broadcast());
     }
 
     private static RewardSettings withRewardBroadcast(RewardSettings r, boolean value) {
-        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemReward(), r.consoleCommands(),
-                r.weight(), r.rarity(), value);
+        return new RewardSettings(r.id(), r.displayName(), r.icon(), r.itemRewards(), r.consoleCommands(),
+                r.weight(), r.displayScale(), r.rarity(), value);
+    }
+
+    private static final class RewardItemsDraft {
+        private final String crateId;
+        private final String rewardId;
+        private final RewardSettings settings;
+        private final List<ItemStack> items;
+        private boolean returnToEditor;
+        private boolean saving;
+
+        private RewardItemsDraft(String crateId, RewardSettings settings) {
+            this.crateId = Objects.requireNonNull(crateId, "crateId");
+            this.settings = Objects.requireNonNull(settings, "settings");
+            this.rewardId = settings.id();
+            this.items = new ArrayList<>(settings.itemRewards());
+        }
+
+        private boolean matches(ScreenHolder holder) {
+            return crateId.equals(holder.crateId()) && rewardId.equals(holder.rewardId());
+        }
     }
 
     enum FineAxis {

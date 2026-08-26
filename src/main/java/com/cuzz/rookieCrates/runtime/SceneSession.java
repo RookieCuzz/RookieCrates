@@ -140,7 +140,7 @@ public final class SceneSession {
                     player
             );
             lootModels.add(lootModel);
-            lootModel.configureLoot(reward.item(), reward.displayName());
+            lootModel.configureLoot(reward.item(), reward.displayName(), reward.displayScale());
             if (!lootModel.playAnimation("idle", true)) {
                 throw new IllegalArgumentException("Missing idle animation for loot model: " + reward.lootModel());
             }

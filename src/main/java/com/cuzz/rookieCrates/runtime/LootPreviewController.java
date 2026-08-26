@@ -150,7 +150,11 @@ public final class LootPreviewController implements Listener {
                         player
                 );
                 spawned.add(model);
-                model.configureLoot(displayItem(reward), reward.definition().displayName());
+                model.configureLoot(
+                        displayItem(reward),
+                        reward.definition().displayName(),
+                        reward.definition().displayScale()
+                );
                 if (!model.playAnimation("idle", true)) {
                     throw new IllegalArgumentException("Loot 模型缺少 idle 动画："
                             + lootModels.modelFor(reward.definition().rarity()));

@@ -2,9 +2,12 @@ package com.cuzz.rookieCrates.runtime.model;
 
 import com.ticxo.modelengine.api.model.ActiveModel;
 import com.ticxo.modelengine.api.model.ModeledEntity;
+import com.ticxo.modelengine.api.model.bone.ManualAnimator;
 import com.ticxo.modelengine.api.model.bone.ModelBone;
+import com.ticxo.modelengine.api.model.bone.SimpleManualAnimator;
 import com.ticxo.modelengine.api.model.bone.behavior.BoneBehavior;
 import com.ticxo.modelengine.api.model.bone.type.HeldItem;
+import org.bukkit.entity.ItemDisplay;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
@@ -13,6 +16,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,6 +68,25 @@ class RuntimeModelHandleTest {
 
         assertThrows(IllegalStateException.class,
                 () -> RuntimeModelHandle.lootItemBehavior(active));
+    }
+
+    @Test
+    void lootItemUsesFixedTransformAndConfiguredScale() {
+        AtomicReference<ManualAnimator> animator = new AtomicReference<>();
+        AtomicReference<ItemDisplay.ItemDisplayTransform> display = new AtomicReference<>();
+        ModelBone bone = itemBone(Optional.empty(), animator);
+        HeldItem heldItem = heldItem(display);
+
+        RuntimeModelHandle.configureLootTransform(bone, heldItem, 0.6D);
+
+        assertEquals(ItemDisplay.ItemDisplayTransform.FIXED, display.get());
+        assertNotNull(animator.get());
+        SimpleManualAnimator scaleAnimator = (SimpleManualAnimator) animator.get();
+        assertEquals(0.6F, scaleAnimator.getScale().x, 0.0001F);
+        assertEquals(0.6F, scaleAnimator.getScale().y, 0.0001F);
+        assertEquals(0.6F, scaleAnimator.getScale().z, 0.0001F);
+        assertThrows(IllegalArgumentException.class,
+                () -> RuntimeModelHandle.configureLootTransform(bone, heldItem, 0.0D));
     }
 
     private static ModeledEntity modeledEntity(
@@ -119,11 +143,22 @@ class RuntimeModelHandleTest {
     }
 
     private static ModelBone itemBone(Optional<HeldItem> behavior) {
+        return itemBone(behavior, new AtomicReference<>());
+    }
+
+    private static ModelBone itemBone(
+            Optional<HeldItem> behavior,
+            AtomicReference<ManualAnimator> animator
+    ) {
         return (ModelBone) Proxy.newProxyInstance(
                 ModelBone.class.getClassLoader(),
                 new Class<?>[]{ModelBone.class},
                 (proxy, method, args) -> switch (method.getName()) {
                     case "getBoneBehavior" -> behavior;
+                    case "setManualAnimator" -> {
+                        animator.set((ManualAnimator) args[0]);
+                        yield null;
+                    }
                     case "hashCode" -> System.identityHashCode(proxy);
                     case "equals" -> proxy == args[0];
                     case "toString" -> "ItemBoneTestDouble";
@@ -133,10 +168,20 @@ class RuntimeModelHandleTest {
     }
 
     private static HeldItem heldItem() {
+        return heldItem(new AtomicReference<>());
+    }
+
+    private static HeldItem heldItem(
+            AtomicReference<ItemDisplay.ItemDisplayTransform> display
+    ) {
         return (HeldItem) Proxy.newProxyInstance(
                 HeldItem.class.getClassLoader(),
                 new Class<?>[]{HeldItem.class, BoneBehavior.class},
                 (proxy, method, args) -> switch (method.getName()) {
+                    case "setDisplay" -> {
+                        display.set((ItemDisplay.ItemDisplayTransform) args[0]);
+                        yield null;
+                    }
                     case "hashCode" -> System.identityHashCode(proxy);
                     case "equals" -> proxy == args[0];
                     case "toString" -> "HeldItemTestDouble";

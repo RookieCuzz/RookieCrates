@@ -18,6 +18,7 @@ public final class ScreenHolder implements InventoryHolder {
         ADMIN_LIST,
         ADMIN_CRATE,
         REWARD_EDIT,
+        REWARD_ITEMS,
         SCENE,
         SCENE_FINE
     }

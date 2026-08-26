@@ -5,7 +5,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.Objects;
 
 /** A concrete draw result and its rarity-specific display model. */
-public record SceneReward(ItemStack item, String displayName, String lootModel) {
+public record SceneReward(ItemStack item, String displayName, String lootModel, double displayScale) {
     public SceneReward {
         Objects.requireNonNull(item, "item");
         if (item.getType().isAir() || item.getAmount() <= 0) {
@@ -19,6 +19,9 @@ public record SceneReward(ItemStack item, String displayName, String lootModel) 
         Objects.requireNonNull(lootModel, "lootModel");
         if (lootModel.isBlank()) {
             throw new IllegalArgumentException("lootModel must not be blank");
+        }
+        if (!Double.isFinite(displayScale) || displayScale <= 0.0D || displayScale > 4.0D) {
+            throw new IllegalArgumentException("displayScale must be greater than 0 and at most 4");
         }
     }
 

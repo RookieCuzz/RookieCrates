@@ -43,6 +43,10 @@ preview:
   # /rc preview 生成的七个私有 Loot 模型保留时间；600 ticks = 30 秒。
   duration-ticks: 600
 
+loot-display:
+  # 新建奖品的默认展示缩放；已有奖品在奖品编辑 GUI 中单独设置。
+  default-item-scale: 0.6
+
 broadcast:
   # 新建宝箱默认使用的全服广播稀有度门槛。
   minimum-rarity: S

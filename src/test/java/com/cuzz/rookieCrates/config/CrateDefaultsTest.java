@@ -74,4 +74,18 @@ class CrateDefaultsTest {
 
         assertThrows(IllegalArgumentException.class, () -> CrateDefaults.load(config));
     }
+
+    @Test
+    void loadsAndValidatesDefaultLootItemScale() {
+        assertEquals(0.6D, LootDisplaySettings.load(new YamlConfiguration()).defaultItemScale());
+
+        YamlConfiguration configured = new YamlConfiguration();
+        configured.set("loot-display.default-item-scale", 0.75D);
+        assertEquals(0.75D, LootDisplaySettings.load(configured).defaultItemScale());
+
+        configured.set("loot-display.default-item-scale", 0.0D);
+        assertThrows(IllegalArgumentException.class, () -> LootDisplaySettings.load(configured));
+        configured.set("loot-display.default-item-scale", 4.1D);
+        assertThrows(IllegalArgumentException.class, () -> LootDisplaySettings.load(configured));
+    }
 }

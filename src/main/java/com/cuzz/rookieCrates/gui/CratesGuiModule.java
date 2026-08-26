@@ -17,13 +17,20 @@ public final class CratesGuiModule {
     public static CratesGuiController install(
             JavaPlugin plugin,
             CratesGuiFacade facade,
-            LootModelPalette lootModels
+            LootModelPalette lootModels,
+            double defaultLootItemScale
     ) {
         Objects.requireNonNull(plugin, "plugin");
         Objects.requireNonNull(facade, "facade");
         Objects.requireNonNull(lootModels, "lootModels");
         ChatInputManager inputs = new ChatInputManager(plugin);
-        CratesGuiController controller = new CratesGuiController(plugin, facade, inputs, lootModels);
+        CratesGuiController controller = new CratesGuiController(
+                plugin,
+                facade,
+                inputs,
+                lootModels,
+                defaultLootItemScale
+        );
         plugin.getServer().getPluginManager().registerEvents(inputs, plugin);
         plugin.getServer().getPluginManager().registerEvents(controller, plugin);
         PluginCommand command = Objects.requireNonNull(plugin.getCommand("rookiecrates"),

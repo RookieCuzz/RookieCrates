@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -181,25 +182,43 @@ public interface CratesGuiFacade {
             String id,
             String displayName,
             ItemStack icon,
-            ItemStack itemReward,
+            List<ItemStack> itemRewards,
             List<String> consoleCommands,
             double weight,
+            double displayScale,
             Rarity rarity,
             boolean broadcast
     ) {
+        public static final int MAX_ITEM_STACKS = 27;
+
         public RewardSettings {
             id = requireText(id, "id");
             displayName = requireText(displayName, "displayName");
             icon = cloneOrNull(icon);
-            itemReward = cloneOrNull(itemReward);
+            List<ItemStack> itemCopies = new ArrayList<>();
+            if (itemRewards != null) {
+                for (ItemStack item : itemRewards) {
+                    if (item == null || item.getType().isAir() || item.getAmount() <= 0) {
+                        throw new IllegalArgumentException("Reward items must be non-empty ItemStacks");
+                    }
+                    itemCopies.add(item.clone());
+                }
+            }
+            if (itemCopies.size() > MAX_ITEM_STACKS) {
+                throw new IllegalArgumentException("A reward supports at most " + MAX_ITEM_STACKS + " item stacks");
+            }
+            itemRewards = List.copyOf(itemCopies);
             consoleCommands = consoleCommands == null
                     ? List.of()
                     : consoleCommands.stream().map(String::trim).filter(value -> !value.isEmpty()).toList();
             if (!Double.isFinite(weight) || weight <= 0.0D) {
                 throw new IllegalArgumentException("Reward weight must be finite and positive");
             }
+            if (!Double.isFinite(displayScale) || displayScale <= 0.0D || displayScale > 4.0D) {
+                throw new IllegalArgumentException("Reward display scale must be greater than 0 and at most 4");
+            }
             rarity = Objects.requireNonNull(rarity, "rarity");
-            if (itemReward == null && consoleCommands.isEmpty()) {
+            if (itemRewards.isEmpty() && consoleCommands.isEmpty()) {
                 throw new IllegalArgumentException("A reward needs an item, a command, or both");
             }
         }
@@ -210,8 +229,13 @@ public interface CratesGuiFacade {
         }
 
         @Override
+        public List<ItemStack> itemRewards() {
+            return itemRewards.stream().map(ItemStack::clone).toList();
+        }
+
+        /** The first configured stack is used as the reward icon and ModelEngine display item. */
         public ItemStack itemReward() {
-            return cloneOrNull(itemReward);
+            return itemRewards.isEmpty() ? null : itemRewards.getFirst().clone();
         }
     }
 

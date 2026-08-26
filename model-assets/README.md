@@ -12,7 +12,7 @@
 | `loot_pink` | `ModelEngine/blueprints/loot_pink.bbmodel` | A 级粉色奖励展示 | `idle`、`ih_item` |
 | `loot_yellow` | `ModelEngine/blueprints/loot_yellow.bbmodel` | S 级黄色奖励展示 | `idle`、`ih_item` |
 
-`ih_item` 中的 `ih_` 是 ModelEngine 4.1 的 HEAD 持物行为前缀，导入后运行时骨骼 ID 为 `item`。RookieCrates 通过该行为的 `HeldItem#setItemProvider` 挂载真实奖励；不要将它改为没有行为的普通空骨骼 `item`。`tag_name` 不是必需骨骼；模型额外提供带 NAMETAG 行为的 `tag_name` 时，插件才会显示名称标签。
+`ih_item` 中的 `ih_` 会让 ModelEngine 4.1 注册持物行为，导入后运行时骨骼 ID 为 `item`。RookieCrates 将其显示变换统一设为 `FIXED`，通过 `HeldItem#setItemProvider` 挂载真实奖励。每个奖品的显示比例都保存在奖品自身配置中，可在奖品编辑 GUI 内单独调整；`config.yml` 的 `loot-display.default-item-scale` 只是新建奖品的默认值。不要将 `ih_item` 改为没有行为的普通空骨骼 `item`。`tag_name` 不是必需骨骼；模型额外提供带 NAMETAG 行为的 `tag_name` 时，插件才会显示名称标签。
 
 ## 原文件名映射
 

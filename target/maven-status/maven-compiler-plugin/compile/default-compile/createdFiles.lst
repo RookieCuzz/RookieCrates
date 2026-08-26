@@ -16,11 +16,13 @@ com\cuzz\rookieCrates\RookieCrates.class
 com\cuzz\rookieCrates\gui\api\CratesGuiFacade$ScenePoint.class
 com\cuzz\rookieCrates\gui\CratesGuiController$1.class
 com\cuzz\rookieCrates\gui\api\DefaultCratesGuiFacade$1.class
+com\cuzz\rookieCrates\gui\CratesGuiController$RewardItemsDraft.class
 com\cuzz\rookieCrates\gui\ChatInputManager$Session.class
 com\cuzz\rookieCrates\gui\ScreenHolder$Screen.class
 com\cuzz\rookieCrates\storage\SqlConsumer.class
 com\cuzz\rookieCrates\gui\api\DefaultCratesGuiFacade$ViewSnapshot.class
 com\cuzz\rookieCrates\runtime\LootPreviewController$PreviewSnapshot.class
+com\cuzz\rookieCrates\config\LootDisplaySettings.class
 com\cuzz\rookieCrates\economy\EconomyGateway$TransactionResult.class
 com\cuzz\rookieCrates\gui\api\CratesGuiFacade$DrawType.class
 com\cuzz\rookieCrates\domain\PendingDeliveryStatus.class

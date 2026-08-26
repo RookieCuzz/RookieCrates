@@ -503,7 +503,8 @@ public final class OpeningCoordinator {
         return new SceneReward(
                 display,
                 reward.definition().displayName(),
-                lootModels.modelFor(reward.definition().rarity())
+                lootModels.modelFor(reward.definition().rarity()),
+                reward.definition().displayScale()
         );
     }
 

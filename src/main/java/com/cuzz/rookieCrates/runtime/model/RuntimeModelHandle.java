@@ -8,10 +8,13 @@ import com.ticxo.modelengine.api.entity.Dummy;
 import com.ticxo.modelengine.api.model.ActiveModel;
 import com.ticxo.modelengine.api.model.ModeledEntity;
 import com.ticxo.modelengine.api.model.bone.BoneBehaviorTypes;
+import com.ticxo.modelengine.api.model.bone.ModelBone;
+import com.ticxo.modelengine.api.model.bone.SimpleManualAnimator;
 import com.ticxo.modelengine.api.model.bone.type.HeldItem;
 import com.ticxo.modelengine.api.model.bone.type.NameTag;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -155,12 +158,12 @@ public final class RuntimeModelHandle {
         return activeModel.getAnimationHandler().playAnimation(property, true);
     }
 
-    public void configureLoot(ItemStack item, String displayName) {
+    public void configureLoot(ItemStack item, String displayName, double itemScale) {
         requireMainThread();
         if (removed) {
             return;
         }
-        setLootItem(activeModel, item);
+        setLootItem(activeModel, item, itemScale);
         activeModel.getBone("tag_name")
                 .flatMap(bone -> bone.getBoneBehavior(BoneBehaviorTypes.NAMETAG))
                 .filter(NameTag.class::isInstance)
@@ -172,19 +175,35 @@ public final class RuntimeModelHandle {
     }
 
     /** Uses ModelEngine's held-item renderer; a plain empty bone has no renderer of its own. */
-    static void setLootItem(ActiveModel activeModel, ItemStack item) {
+    static void setLootItem(ActiveModel activeModel, ItemStack item, double itemScale) {
+        ModelBone itemBone = lootItemBone(activeModel);
         HeldItem heldItem = lootItemBehavior(activeModel);
+        configureLootTransform(itemBone, heldItem, itemScale);
         heldItem.setItemProvider(new HeldItem.StaticItemStackSupplier(item.clone()));
     }
 
-    static HeldItem lootItemBehavior(ActiveModel activeModel) {
+    static ModelBone lootItemBone(ActiveModel activeModel) {
         return activeModel.getBone("item")
-                .orElseThrow(() -> new IllegalStateException("Loot model has no item bone"))
+                .orElseThrow(() -> new IllegalStateException("Loot model has no item bone"));
+    }
+
+    static HeldItem lootItemBehavior(ActiveModel activeModel) {
+        return lootItemBone(activeModel)
                 .getBoneBehavior(BoneBehaviorTypes.ITEM)
                 .map(HeldItem.class::cast)
                 .orElseThrow(() -> new IllegalStateException(
                         "Loot item bone has no ModelEngine held-item behavior; name it ih_item"
                 ));
+    }
+
+    static void configureLootTransform(ModelBone itemBone, HeldItem heldItem, double itemScale) {
+        if (!Double.isFinite(itemScale) || itemScale <= 0.0D || itemScale > 4.0D) {
+            throw new IllegalArgumentException("loot item scale must be greater than 0 and at most 4");
+        }
+        heldItem.setDisplay(ItemDisplay.ItemDisplayTransform.FIXED);
+        SimpleManualAnimator scaleAnimator = new SimpleManualAnimator();
+        scaleAnimator.getScale().set((float) itemScale);
+        itemBone.setManualAnimator(scaleAnimator);
     }
 
     public void setHidden(Player player, boolean hidden) {

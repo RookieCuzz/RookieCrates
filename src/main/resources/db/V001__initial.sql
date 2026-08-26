@@ -31,6 +31,7 @@ CREATE TABLE rewards (
     description TEXT NOT NULL DEFAULT '',
     rarity TEXT NOT NULL CHECK (rarity IN ('S', 'A', 'B', 'C')),
     weight REAL NOT NULL CHECK (weight >= 0),
+    display_scale REAL NOT NULL DEFAULT 0.6 CHECK (display_scale > 0 AND display_scale <= 4),
     enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0, 1)),
     broadcast INTEGER NOT NULL DEFAULT 0 CHECK (broadcast IN (0, 1))
 );

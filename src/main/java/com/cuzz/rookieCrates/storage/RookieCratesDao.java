@@ -187,14 +187,15 @@ public final class RookieCratesDao {
         checkThread();
         Objects.requireNonNull(reward, "reward");
         try (PreparedStatement statement = connection.prepareStatement("""
-                INSERT INTO rewards(id, crate_id, display_name, description, rarity, weight, enabled, broadcast)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO rewards(id, crate_id, display_name, description, rarity, weight, display_scale, enabled, broadcast)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     crate_id = excluded.crate_id,
                     display_name = excluded.display_name,
                     description = excluded.description,
                     rarity = excluded.rarity,
                     weight = excluded.weight,
+                    display_scale = excluded.display_scale,
                     enabled = excluded.enabled,
                     broadcast = excluded.broadcast
                 """)) {
@@ -204,8 +205,9 @@ public final class RookieCratesDao {
             statement.setString(4, reward.description());
             statement.setString(5, reward.rarity().name());
             statement.setDouble(6, reward.weight());
-            statement.setInt(7, bool(reward.enabled()));
-            statement.setInt(8, bool(reward.broadcast()));
+            statement.setDouble(7, reward.displayScale());
+            statement.setInt(8, bool(reward.enabled()));
+            statement.setInt(9, bool(reward.broadcast()));
             statement.executeUpdate();
         }
     }
@@ -1407,6 +1409,7 @@ public final class RookieCratesDao {
                 result.getString("description"),
                 Rarity.valueOf(result.getString("rarity")),
                 result.getDouble("weight"),
+                result.getDouble("display_scale"),
                 result.getInt("enabled") != 0,
                 result.getInt("broadcast") != 0
         );

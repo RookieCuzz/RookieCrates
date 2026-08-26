@@ -45,7 +45,7 @@ class ConfigurationTransferServiceTest {
                 ));
                 dao.replaceRewardBundle(new RewardBundle(
                         new RewardDefinition("diamond", "alpha", "Diamond", "", Rarity.S,
-                                1.0D, true, true),
+                                1.0D, 0.75D, true, true),
                         List.of(new RewardItem(0, "diamond", new byte[]{9, 8, 7}, 3)),
                         List.of(new RewardCommand(0, "diamond", "say {player}", 0))
                 ));
@@ -75,6 +75,7 @@ class ConfigurationTransferServiceTest {
                 assertEquals(150.0D, crate.sevenPrice());
                 assertArrayEquals(new byte[]{1, 2, 3}, crate.keyItemBlob());
                 RewardBundle reward = dao.findReward("diamond").orElseThrow();
+                assertEquals(0.75D, reward.definition().displayScale());
                 assertEquals(3, reward.items().getFirst().amount());
                 assertEquals("say {player}", reward.commands().getFirst().command());
                 assertEquals(7, dao.findPlayerState(playerId, "alpha").orElseThrow().virtualKeys());

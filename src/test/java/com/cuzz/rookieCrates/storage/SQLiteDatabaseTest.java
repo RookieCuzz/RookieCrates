@@ -60,11 +60,14 @@ class SQLiteDatabaseTest {
         database.transaction(dao -> {
             seedCrate(dao);
             RewardDefinition definition = new RewardDefinition(
-                    "diamond", "basic", "Diamond", "A diamond", Rarity.S, 1.0, true, true
+                    "diamond", "basic", "Diamond", "A diamond", Rarity.S, 1.0, 0.75D, true, true
             );
             dao.replaceRewardBundle(new RewardBundle(
                     definition,
-                    List.of(new RewardItem(0, "diamond", new byte[]{9, 8, 7}, 2)),
+                    List.of(
+                            new RewardItem(0, "diamond", new byte[]{9, 8, 7}, 2),
+                            new RewardItem(0, "diamond", new byte[]{6, 5, 4}, 16)
+                    ),
                     List.of(new RewardCommand(0, "diamond", "say {player}", 0))
             ));
             dao.upsertPlacement(new Placement("spawn", "basic", "world", 1, 2, 3, 90, 0));
@@ -79,7 +82,11 @@ class SQLiteDatabaseTest {
         assertEquals(3, database.submit(RookieCratesDao::schemaVersion).join());
         RewardBundle reward = database.submit(dao -> dao.findReward("diamond").orElseThrow()).join();
         assertTrue(reward.definition().broadcast());
+        assertEquals(0.75D, reward.definition().displayScale());
+        assertEquals(2, reward.items().size());
         assertArrayEquals(new byte[]{9, 8, 7}, reward.items().getFirst().itemBlob());
+        assertArrayEquals(new byte[]{6, 5, 4}, reward.items().get(1).itemBlob());
+        assertEquals(16, reward.items().get(1).amount());
         assertEquals(7, database.submit(dao -> dao.listScenePoints("default").size()).join());
         assertEquals(1, database.submit(dao -> dao.listAllPlacements().size()).join());
 

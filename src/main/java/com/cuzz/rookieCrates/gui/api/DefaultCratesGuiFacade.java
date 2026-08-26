@@ -296,8 +296,8 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
         String id = requireId(crateId);
         Objects.requireNonNull(settings, "settings");
         List<RewardItem> items = new ArrayList<>();
-        if (settings.itemReward() != null) {
-            ItemStack captured = settings.itemReward();
+        for (ItemStack configured : settings.itemRewards()) {
+            ItemStack captured = configured.clone();
             int amount = captured.getAmount();
             captured.setAmount(1);
             items.add(new RewardItem(0, settings.id(), itemCodec.encode(captured), amount));
@@ -314,6 +314,7 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                         "",
                         settings.rarity(),
                         settings.weight(),
+                        settings.displayScale(),
                         true,
                         settings.broadcast()
                 ),
@@ -632,12 +633,12 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
     }
 
     private RewardSettings toRewardSettings(RewardBundle reward) {
-        ItemStack item = null;
-        if (!reward.items().isEmpty()) {
-            RewardItem stored = reward.items().getFirst();
-            item = decodeOrNull(stored.itemBlob());
+        List<ItemStack> items = new ArrayList<>();
+        for (RewardItem stored : reward.items()) {
+            ItemStack item = decodeOrNull(stored.itemBlob());
             if (item != null) {
                 item.setAmount(Math.min(stored.amount(), item.getMaxStackSize()));
+                items.add(item);
             }
         }
         List<String> commands = reward.commands().stream()
@@ -647,10 +648,11 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
         return new RewardSettings(
                 reward.definition().id(),
                 reward.definition().displayName(),
-                item,
-                item,
+                items.isEmpty() ? null : items.getFirst(),
+                items,
                 commands,
                 reward.definition().weight(),
+                reward.definition().displayScale(),
                 reward.definition().rarity(),
                 reward.definition().broadcast()
         );
