@@ -51,6 +51,11 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>com.melluh:ServerTours-api</exclude>
+                                </excludes>
+                            </artifactSet>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -108,7 +113,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.1-R0.1-SNAPSHOT</version>
+            <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -152,6 +157,13 @@
             <version>1.0</version>
             <scope>system</scope>
             <systemPath>${project.basedir}/libs/ModelEngine-4.1.0.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.melluh</groupId>
+            <artifactId>ServerTours-api</artifactId>
+            <version>3.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/libs/ServerTours-3.0.0-api.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

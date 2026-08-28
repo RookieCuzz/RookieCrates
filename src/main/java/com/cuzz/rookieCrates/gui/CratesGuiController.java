@@ -151,8 +151,8 @@ public final class CratesGuiController implements Listener {
             return;
         }
         showLoading(player, Screen.SCENE, crateId, 0);
-        await(player, () -> facade.getScenePoints(crateId),
-                points -> renderScene(player, crateId, points),
+        await(player, () -> facade.getSceneConfiguration(crateId),
+                configuration -> renderScene(player, crateId, configuration),
                 () -> openAdminList(player, 0));
     }
 
@@ -384,10 +384,25 @@ public final class CratesGuiController implements Listener {
         }
     }
 
-    private void renderScene(Player player, String crateId, Map<ScenePoint, ScenePointLocation> configured) {
+    private void renderScene(
+            Player player,
+            String crateId,
+            CratesGuiFacade.SceneConfiguration configuration
+    ) {
         ScreenHolder holder = screen(player, Screen.SCENE, crateId, null, 0, 27, "&4场景点: " + crateId);
         Inventory inventory = holder.getInventory();
         GuiItems.fill(inventory);
+        Map<ScenePoint, ScenePointLocation> configured = configuration.points();
+        String route = configuration.serverToursRoute();
+        inventory.setItem(4, GuiItems.item(
+                route == null ? Material.ENDER_EYE : Material.RECOVERY_COMPASS,
+                route == null ? "&eServerTours 录制镜头：未绑定" : "&aServerTours 录制镜头：" + route,
+                route == null
+                        ? "&7未绑定时使用下方 CAMERA 固定镜头"
+                        : "&7单抽与七连共用此 RECORDED 路线",
+                "&7点击后输入路线名进行绑定",
+                "&7输入 &fnone &7清除绑定"
+        ));
         ScenePoint[] points = ScenePoint.values();
         for (int i = 0; i < points.length; i++) {
             ScenePoint point = points[i];
@@ -696,6 +711,19 @@ public final class CratesGuiController implements Listener {
             boolean shiftClick
     ) {
         if (!requirePermission(player, ADMIN_PERMISSION)) {
+            return;
+        }
+        if (slot == 4) {
+            input(player,
+                    "请输入 ServerTours RECORDED 路线名；输入 none 清除：",
+                    raw -> {
+                        String route = raw.equalsIgnoreCase("none") ? null : raw;
+                        awaitResult(player,
+                                () -> facade.setServerToursRoute(holder.crateId(), route),
+                                () -> openSceneConfig(player, holder.crateId()),
+                                () -> openSceneConfig(player, holder.crateId()));
+                    },
+                    () -> openSceneConfig(player, holder.crateId()));
             return;
         }
         if (slot == 22) {

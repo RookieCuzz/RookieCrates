@@ -216,7 +216,8 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                     profileId,
                     name + " 场景",
                     defaults.crateModel(),
-                    defaults.lootModels().modelFor(Rarity.C)
+                    defaults.lootModels().modelFor(Rarity.C),
+                    null
             ));
             dao.upsertCrate(new CrateDefinition(
                     id,
@@ -263,11 +264,15 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
             CrateDefinition old = dao.findCrate(settings.id())
                     .orElseThrow(() -> new IllegalArgumentException("宝箱不存在。" ));
             String profileId = old.sceneProfileId() == null ? settings.id() + "_scene" : old.sceneProfileId();
+            SceneProfile oldProfile = old.sceneProfileId() == null
+                    ? null
+                    : dao.findSceneProfile(old.sceneProfileId()).orElse(null);
             dao.upsertSceneProfile(new SceneProfile(
                     profileId,
                     settings.displayName() + " 场景",
                     settings.crateModel(),
-                    settings.lootModel()
+                    settings.lootModel(),
+                    oldProfile == null ? null : oldProfile.serverToursRoute()
             ));
             dao.upsertCrate(new CrateDefinition(
                     settings.id(),
@@ -444,6 +449,11 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
 
     @Override
     public CompletableFuture<Map<CratesGuiFacade.ScenePoint, ScenePointLocation>> getScenePoints(String crateId) {
+        return getSceneConfiguration(crateId).thenApply(SceneConfiguration::points);
+    }
+
+    @Override
+    public CompletableFuture<SceneConfiguration> getSceneConfiguration(String crateId) {
         String id = requireId(crateId);
         return database.submit(dao -> {
             CrateDefinition crate = dao.findCrate(id)
@@ -451,6 +461,8 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
             if (crate.sceneProfileId() == null) {
                 throw new IllegalArgumentException("宝箱没有场景配置。");
             }
+            SceneProfile profile = dao.findSceneProfile(crate.sceneProfileId())
+                    .orElseThrow(() -> new IllegalArgumentException("宝箱场景配置不存在。"));
             EnumMap<CratesGuiFacade.ScenePoint, ScenePointLocation> points =
                     new EnumMap<>(CratesGuiFacade.ScenePoint.class);
             for (com.cuzz.rookieCrates.domain.ScenePoint point
@@ -461,8 +473,37 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                                 point.world(), point.x(), point.y(), point.z(), point.yaw(), point.pitch())
                 );
             }
-            return Map.copyOf(points);
+            return new SceneConfiguration(points, profile.serverToursRoute());
         });
+    }
+
+    @Override
+    public CompletableFuture<GuiResult> setServerToursRoute(String crateId, String routeName) {
+        String id = requireId(crateId);
+        String normalized = routeName == null ? null : routeName.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalized != null && normalized.isEmpty()) {
+            normalized = null;
+        }
+        String storedRoute = normalized;
+        return result(database.transaction(dao -> {
+            CrateDefinition crate = dao.findCrate(id)
+                    .orElseThrow(() -> new IllegalArgumentException("宝箱不存在。"));
+            if (crate.sceneProfileId() == null) {
+                throw new IllegalArgumentException("宝箱没有场景配置。");
+            }
+            SceneProfile profile = dao.findSceneProfile(crate.sceneProfileId())
+                    .orElseThrow(() -> new IllegalArgumentException("宝箱场景配置不存在。"));
+            dao.upsertSceneProfile(new SceneProfile(
+                    profile.id(),
+                    profile.name(),
+                    profile.crateModel(),
+                    profile.lootModel(),
+                    storedRoute
+            ));
+            return storedRoute;
+        }).thenCompose(route -> reloadRuntime().thenApply(ignored -> route)), route -> route == null
+                ? "已清除 ServerTours 录制镜头；开箱恢复使用 CAMERA 固定镜头。"
+                : "已绑定 ServerTours 录制镜头：" + route);
     }
 
     @Override
@@ -554,7 +595,9 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
             indexed.computeIfAbsent(point.kind(), ignored -> new HashMap<>()).put(point.pointIndex(), point);
         }
         com.cuzz.rookieCrates.domain.ScenePoint cratePoint = requirePoint(indexed, ScenePointKind.CRATE, 1);
-        com.cuzz.rookieCrates.domain.ScenePoint cameraPoint = requirePoint(indexed, ScenePointKind.CAMERA, 1);
+        com.cuzz.rookieCrates.domain.ScenePoint cameraPoint = profile.serverToursRoute() == null
+                ? requirePoint(indexed, ScenePointKind.CAMERA, 1)
+                : indexed.getOrDefault(ScenePointKind.CAMERA, Map.of()).get(1);
         List<Location> loot = new ArrayList<>(7);
         for (int index = 1; index <= 7; index++) {
             loot.add(location(requirePoint(indexed, ScenePointKind.LOOT, index)));
@@ -564,7 +607,7 @@ public final class DefaultCratesGuiFacade implements CratesGuiFacade {
                 placement.placementId(),
                 location(placement),
                 location(cratePoint),
-                location(cameraPoint),
+                cameraPoint == null ? location(cratePoint) : location(cameraPoint),
                 loot,
                 (float) crate.interactionWidth(),
                 (float) crate.interactionHeight(),

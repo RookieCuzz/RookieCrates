@@ -37,7 +37,9 @@ class ConfigurationTransferServiceTest {
         try (SQLiteDatabase source = new SQLiteDatabase(temporaryDirectory.resolve("source.db"))) {
             source.start();
             source.transaction(dao -> {
-                dao.upsertSceneProfile(new SceneProfile("alpha_scene", "Alpha", "default_crate", "loot_white"));
+                dao.upsertSceneProfile(new SceneProfile(
+                        "alpha_scene", "Alpha", "default_crate", "loot_white", "crate_intro"
+                ));
                 dao.upsertCrate(new CrateDefinition(
                         "alpha", "Alpha Crate", true, new byte[]{1, 2, 3},
                         25.0D, 150.0D, 10, 80, "alpha_scene", Rarity.S,
@@ -74,6 +76,8 @@ class ConfigurationTransferServiceTest {
                 CrateDefinition crate = dao.findCrate("alpha").orElseThrow();
                 assertEquals(150.0D, crate.sevenPrice());
                 assertArrayEquals(new byte[]{1, 2, 3}, crate.keyItemBlob());
+                assertEquals("crate_intro", dao.findSceneProfile("alpha_scene")
+                        .orElseThrow().serverToursRoute());
                 RewardBundle reward = dao.findReward("diamond").orElseThrow();
                 assertEquals(0.75D, reward.definition().displayScale());
                 assertEquals(3, reward.items().getFirst().amount());

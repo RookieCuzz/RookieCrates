@@ -55,6 +55,10 @@ public interface CratesGuiFacade {
 
     CompletableFuture<Map<ScenePoint, ScenePointLocation>> getScenePoints(String crateId);
 
+    CompletableFuture<SceneConfiguration> getSceneConfiguration(String crateId);
+
+    CompletableFuture<GuiResult> setServerToursRoute(String crateId, String routeName);
+
     CompletableFuture<GuiResult> exportConfig();
 
     CompletableFuture<GuiResult> importConfig();
@@ -99,6 +103,21 @@ public interface CratesGuiFacade {
             if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)
                     || !Float.isFinite(yaw) || !Float.isFinite(pitch)) {
                 throw new IllegalArgumentException("Scene point coordinates must be finite");
+            }
+        }
+    }
+
+    record SceneConfiguration(
+            Map<ScenePoint, ScenePointLocation> points,
+            String serverToursRoute
+    ) {
+        public SceneConfiguration {
+            points = points == null ? Map.of() : Map.copyOf(points);
+            if (serverToursRoute != null) {
+                serverToursRoute = serverToursRoute.trim();
+                if (serverToursRoute.isEmpty()) {
+                    serverToursRoute = null;
+                }
             }
         }
     }

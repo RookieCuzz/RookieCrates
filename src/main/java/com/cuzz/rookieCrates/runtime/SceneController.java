@@ -26,6 +26,7 @@ public final class SceneController {
     private final CrateRuntime crateRuntime;
     private final SceneRecoveryStore recoveryStore;
     private final SceneTiming timing;
+    private final RecordedCameraBridge recordedCameraBridge;
     private final Map<UUID, SceneSession> sessions = new HashMap<>();
     private final Map<UUID, PendingStart> pendingStarts = new HashMap<>();
     private final Set<UUID> pendingRecoveryReads = ConcurrentHashMap.newKeySet();
@@ -34,7 +35,7 @@ public final class SceneController {
     private final Set<RecoveryKey> retirementInFlight = ConcurrentHashMap.newKeySet();
 
     public SceneController(Plugin plugin, CrateRuntime crateRuntime, SceneRecoveryStore recoveryStore) {
-        this(plugin, crateRuntime, recoveryStore, SceneTiming.DEFAULT);
+        this(plugin, crateRuntime, recoveryStore, SceneTiming.DEFAULT, null);
     }
 
     public SceneController(
@@ -43,10 +44,21 @@ public final class SceneController {
             SceneRecoveryStore recoveryStore,
             SceneTiming timing
     ) {
+        this(plugin, crateRuntime, recoveryStore, timing, null);
+    }
+
+    public SceneController(
+            Plugin plugin,
+            CrateRuntime crateRuntime,
+            SceneRecoveryStore recoveryStore,
+            SceneTiming timing,
+            RecordedCameraBridge recordedCameraBridge
+    ) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.crateRuntime = Objects.requireNonNull(crateRuntime, "crateRuntime");
         this.recoveryStore = Objects.requireNonNull(recoveryStore, "recoveryStore");
         this.timing = Objects.requireNonNull(timing, "timing");
+        this.recordedCameraBridge = recordedCameraBridge;
     }
 
     /**
@@ -133,11 +145,37 @@ public final class SceneController {
         if (session == null) {
             return;
         }
+        completeSession(session);
+    }
+
+    void completeRecorded(SceneSession expected) {
+        requireMainThread();
+        if (!sessions.remove(expected.playerId(), expected)) {
+            return;
+        }
+        completeSession(expected);
+    }
+
+    void abortRecorded(SceneSession expected, Throwable cause) {
+        requireMainThread();
+        if (!sessions.remove(expected.playerId(), expected)) {
+            return;
+        }
+        finishAbort(expected.playerId(), expected, SceneAbortReason.CAMERA_FAILURE, cause);
+    }
+
+    private void completeSession(SceneSession session) {
         session.closeResources();
+        UUID playerId = session.playerId();
         Player player = Bukkit.getPlayer(playerId);
         boolean restored = player != null && session.snapshot().restore(player, true);
         if (!restored) {
-            invokeFailure(session.request(), new IllegalStateException("Player state could not be fully restored"));
+            IllegalStateException restoreFailure =
+                    new IllegalStateException("Player state could not be fully restored");
+            Throwable failure = session.request().serverToursRoute() == null
+                    ? restoreFailure
+                    : new SceneAbortedException(SceneAbortReason.CAMERA_FAILURE, restoreFailure);
+            invokeFailure(session.request(), failure);
             return;
         }
         retireRecovery(playerId, session.request().transactionId());
@@ -274,7 +312,8 @@ public final class SceneController {
                 player,
                 expected.request,
                 expected.snapshot,
-                timing
+                timing,
+                recordedCameraBridge
         );
         sessions.put(playerId, session);
         try {
@@ -331,6 +370,10 @@ public final class SceneController {
         if (session == null) {
             return;
         }
+        finishAbort(playerId, session, reason, cause);
+    }
+
+    private void finishAbort(UUID playerId, SceneSession session, SceneAbortReason reason, Throwable cause) {
         session.closeResources();
         Player player = Bukkit.getPlayer(playerId);
         boolean restored = player != null && session.snapshot().restore(player, true);

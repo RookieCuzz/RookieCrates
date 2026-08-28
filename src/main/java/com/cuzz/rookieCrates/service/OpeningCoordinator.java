@@ -18,6 +18,7 @@ import com.cuzz.rookieCrates.domain.SceneProfile;
 import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.DrawType;
 import com.cuzz.rookieCrates.gui.api.CratesGuiFacade.GuiResult;
 import com.cuzz.rookieCrates.runtime.CratePlacement;
+import com.cuzz.rookieCrates.runtime.RecordedCameraBridge;
 import com.cuzz.rookieCrates.runtime.SceneAbortReason;
 import com.cuzz.rookieCrates.runtime.SceneAbortedException;
 import com.cuzz.rookieCrates.runtime.SceneController;
@@ -64,6 +65,7 @@ public final class OpeningCoordinator {
     private final PlayerOperationLocks playerLocks;
     private final PitySelector<RewardBundle> selector;
     private final LootModelPalette lootModels;
+    private final RecordedCameraBridge recordedCameras;
     private final Map<UUID, String> preferredPlacements = new ConcurrentHashMap<>();
     private final Set<UUID> finalizingTransactions = ConcurrentHashMap.newKeySet();
 
@@ -77,7 +79,8 @@ public final class OpeningCoordinator {
             Messages messages,
             PlayerOperationLocks playerLocks,
             PitySelector<RewardBundle> selector,
-            LootModelPalette lootModels
+            LootModelPalette lootModels,
+            RecordedCameraBridge recordedCameras
     ) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.database = Objects.requireNonNull(database, "database");
@@ -89,6 +92,7 @@ public final class OpeningCoordinator {
         this.playerLocks = Objects.requireNonNull(playerLocks, "playerLocks");
         this.selector = Objects.requireNonNull(selector, "selector");
         this.lootModels = Objects.requireNonNull(lootModels, "lootModels");
+        this.recordedCameras = recordedCameras;
     }
 
     /** Makes a subsequent GUI draw use the exact model entry the player clicked. */
@@ -136,7 +140,10 @@ public final class OpeningCoordinator {
                             return GuiResult.success("抽奖已记录；场景初始化失败，奖励将直接发放或进入待领取。" );
                         }
                         if (!accepted) {
-                            finishCommittedDraw(player, commit, new IllegalStateException("场景当前无法启动"));
+                            Throwable failure = commit.profile().serverToursRoute() == null
+                                    ? new IllegalStateException("场景当前无法启动")
+                                    : new SceneAbortedException(SceneAbortReason.CAMERA_FAILURE);
+                            finishCommittedDraw(player, commit, failure);
                             return GuiResult.success("抽奖已记录；场景无法启动，奖励将直接发放或进入待领取。" );
                         }
                         return GuiResult.success(drawType == DrawType.SEVEN ? "七连抽已开始。" : "单抽已开始。");
@@ -206,6 +213,7 @@ public final class OpeningCoordinator {
         }
 
         CratePlacement placement = resolvePlacement(context);
+        validateRecordedCamera(player, context.profile());
         ItemStack keyTemplate = itemCodec.decode(crate.keyItemBlob());
         int requiredKeys = drawType.draws();
         double price = drawType == DrawType.SEVEN ? crate.sevenPrice() : crate.singlePrice();
@@ -297,8 +305,12 @@ public final class OpeningCoordinator {
             long now = System.currentTimeMillis();
             CrateDefinition crate = dao.findCrate(charged.context().crate().id())
                     .orElseThrow(() -> reject("宝箱在开箱过程中被删除。" ));
+            SceneProfile profile = crate.sceneProfileId() == null
+                    ? null
+                    : dao.findSceneProfile(crate.sceneProfileId()).orElse(null);
             List<RewardBundle> rewards = dao.listEnabledRewards(crate.id());
             if (!sameCrateConfiguration(charged.context().crate(), crate)
+                    || !Objects.equals(charged.context().profile(), profile)
                     || !sameRewardPool(charged.context().rewards(), rewards)) {
                 throw reject("宝箱配置在付款过程中发生变化，本次已取消并退款，请重新开箱。" );
             }
@@ -409,7 +421,7 @@ public final class OpeningCoordinator {
                     transactionId,
                     crate,
                     charged.placement(),
-                    charged.context().profile(),
+                    profile,
                     List.copyOf(selectedRewards)
             );
         });
@@ -486,6 +498,7 @@ public final class OpeningCoordinator {
                 displayRewards,
                 commit.crate().openAnimationFor(displayRewards.size()),
                 commit.crate().skipAllowed(),
+                commit.profile().serverToursRoute(),
                 () -> finishCommittedDraw(player, commit, null),
                 failure -> finishCommittedDraw(player, commit, failure)
         );
@@ -606,6 +619,20 @@ public final class OpeningCoordinator {
         return false;
     }
 
+    private void validateRecordedCamera(Player player, SceneProfile profile) {
+        String routeName = profile == null ? null : profile.serverToursRoute();
+        if (routeName == null) {
+            return;
+        }
+        if (recordedCameras == null) {
+            throw reject("该场景绑定了 ServerTours 路线，但 ServerTours 当前未启用。");
+        }
+        RecordedCameraBridge.Validation validation = recordedCameras.validate(player, routeName);
+        if (!validation.valid()) {
+            throw reject("ServerTours 录制镜头不可用：" + validation.message());
+        }
+    }
+
     private void broadcast(DrawCommit commit, Player player) {
         String format = plugin.getConfig().getString(
                 "broadcast.format",
@@ -651,7 +678,9 @@ public final class OpeningCoordinator {
                     .put(point.pointIndex(), point);
         }
         ScenePoint cratePoint = point(points, ScenePointKind.CRATE, 1);
-        ScenePoint cameraPoint = point(points, ScenePointKind.CAMERA, 1);
+        ScenePoint cameraPoint = context.profile().serverToursRoute() == null
+                ? point(points, ScenePointKind.CAMERA, 1)
+                : points.getOrDefault(ScenePointKind.CAMERA, Map.of()).get(1);
         List<Location> lootLocations = new ArrayList<>(7);
         for (int index = 1; index <= 7; index++) {
             lootLocations.add(toLocation(point(points, ScenePointKind.LOOT, index)));
@@ -661,7 +690,7 @@ public final class OpeningCoordinator {
                 placement.placementId(),
                 toLocation(placement),
                 toLocation(cratePoint),
-                toLocation(cameraPoint),
+                cameraPoint == null ? toLocation(cratePoint) : toLocation(cameraPoint),
                 lootLocations,
                 (float) context.crate().interactionWidth(),
                 (float) context.crate().interactionHeight(),

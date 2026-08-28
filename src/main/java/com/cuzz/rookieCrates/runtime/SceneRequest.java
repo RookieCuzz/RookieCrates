@@ -12,6 +12,7 @@ public record SceneRequest(
         List<SceneReward> rewards,
         String openAnimation,
         boolean skipAllowed,
+        String serverToursRoute,
         Runnable onComplete,
         Consumer<Throwable> onFailure
 ) {
@@ -27,6 +28,12 @@ public record SceneRequest(
             throw new IllegalArgumentException("rewards must not contain null");
         }
         openAnimation = requireText(openAnimation, "openAnimation");
+        if (serverToursRoute != null) {
+            serverToursRoute = serverToursRoute.trim();
+            if (serverToursRoute.isEmpty()) {
+                serverToursRoute = null;
+            }
+        }
         Objects.requireNonNull(onComplete, "onComplete");
         Objects.requireNonNull(onFailure, "onFailure");
     }

@@ -3,7 +3,7 @@ version: '${project.version}'
 main: com.cuzz.rookieCrates.RookieCrates
 api-version: '1.21'
 depend: [ModelEngine]
-softdepend: [Vault]
+softdepend: [Vault, ServerTours]
 commands:
   rookiecrates:
     aliases: [rc, crates]

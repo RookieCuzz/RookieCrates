@@ -13,8 +13,10 @@ import com.cuzz.rookieCrates.listener.PhysicalKeyListener;
 import com.cuzz.rookieCrates.listener.SceneLifecycleListener;
 import com.cuzz.rookieCrates.runtime.CrateRuntime;
 import com.cuzz.rookieCrates.runtime.LootPreviewController;
+import com.cuzz.rookieCrates.runtime.RecordedCameraBridge;
 import com.cuzz.rookieCrates.runtime.SceneController;
 import com.cuzz.rookieCrates.runtime.SceneTiming;
+import com.cuzz.rookieCrates.runtime.ServerToursSceneBridge;
 import com.cuzz.rookieCrates.service.ConfigurationTransferService;
 import com.cuzz.rookieCrates.service.LegacyConfigMigrator;
 import com.cuzz.rookieCrates.service.OpeningCoordinator;
@@ -39,6 +41,7 @@ public final class RookieCrates extends JavaPlugin {
     private CrateRuntime crateRuntime;
     private LootPreviewController lootPreviewController;
     private SceneController sceneController;
+    private RecordedCameraBridge recordedCameraBridge;
     private DefaultCratesGuiFacade facade;
 
     @Override
@@ -95,11 +98,13 @@ public final class RookieCrates extends JavaPlugin {
                     getConfig().getLong("opening.reveal-duration-ticks", 100L),
                     getConfig().getLong("opening.skip-after-ticks", 40L)
             );
+            recordedCameraBridge = initializeRecordedCameraBridge(sceneTiming);
             sceneController = new SceneController(
                     this,
                     crateRuntime,
                     new SQLiteSceneRecoveryStore(database),
-                    sceneTiming
+                    sceneTiming,
+                    recordedCameraBridge
             );
             OpeningCoordinator openings = new OpeningCoordinator(
                     this,
@@ -111,7 +116,8 @@ public final class RookieCrates extends JavaPlugin {
                     messages,
                     playerLocks,
                     new PitySelector<>(new Random()),
-                    lootModels
+                    lootModels,
+                    recordedCameraBridge
             );
             ConfigurationTransferService transfers = new ConfigurationTransferService(
                     database,
@@ -178,6 +184,9 @@ public final class RookieCrates extends JavaPlugin {
         if (sceneController != null) {
             sceneController.shutdown();
         }
+        if (recordedCameraBridge != null) {
+            recordedCameraBridge.close();
+        }
         if (crateRuntime != null) {
             crateRuntime.shutdown();
         }
@@ -191,6 +200,20 @@ public final class RookieCrates extends JavaPlugin {
     }
 
     private void cleanupAfterFailedEnable() {
+        if (sceneController != null) {
+            try {
+                sceneController.shutdown();
+            } catch (RuntimeException ignored) {
+                // Startup failure logging above is the primary failure.
+            }
+        }
+        if (recordedCameraBridge != null) {
+            try {
+                recordedCameraBridge.close();
+            } catch (RuntimeException ignored) {
+                // Startup failure logging above is the primary failure.
+            }
+        }
         if (lootPreviewController != null) {
             try {
                 lootPreviewController.shutdown();
@@ -211,6 +234,23 @@ public final class RookieCrates extends JavaPlugin {
             } catch (RuntimeException ignored) {
                 // Startup failure logging above is the primary failure.
             }
+        }
+    }
+
+    private RecordedCameraBridge initializeRecordedCameraBridge(SceneTiming timing) {
+        org.bukkit.plugin.Plugin serverTours = getServer().getPluginManager().getPlugin("ServerTours");
+        if (serverTours == null || !serverTours.isEnabled()) {
+            getLogger().info("ServerTours not detected; unbound scenes will use the legacy CAMERA view.");
+            return null;
+        }
+        try {
+            RecordedCameraBridge bridge = new ServerToursSceneBridge(this, timing);
+            getLogger().info("ServerTours detected; RECORDED crate camera integration is ready.");
+            return bridge;
+        } catch (RuntimeException | LinkageError failure) {
+            getLogger().warning("ServerTours integration is unavailable: " + describe(failure)
+                    + ". Bound scenes will be rejected before payment.");
+            return null;
         }
     }
 

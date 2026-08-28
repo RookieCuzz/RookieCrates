@@ -72,7 +72,8 @@ public final class LegacyConfigMigrator {
                     profileId,
                     "Legacy imported scene",
                     "default_crate",
-                    "loot_white"
+                    "loot_white",
+                    null
             ));
             dao.upsertCrate(new CrateDefinition(
                     crateId,

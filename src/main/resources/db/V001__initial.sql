@@ -2,7 +2,10 @@ CREATE TABLE scene_profiles (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     crate_model TEXT NOT NULL,
-    loot_model TEXT NOT NULL
+    loot_model TEXT NOT NULL,
+    server_tours_route TEXT CHECK (
+        server_tours_route IS NULL OR length(trim(server_tours_route)) > 0
+    )
 );
 
 CREATE TABLE crates (

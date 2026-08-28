@@ -20,6 +20,7 @@ public final class SceneSession {
     private final SceneRequest request;
     private final PlayerStateSnapshot snapshot;
     private final SceneTiming timing;
+    private final RecordedCameraBridge recordedCameraBridge;
     private final List<RuntimeModelHandle> lootModels = new ArrayList<>();
     private RuntimeModelHandle crateModel;
     private ArmorStand camera;
@@ -29,6 +30,8 @@ public final class SceneSession {
     private boolean closed;
     private boolean revealed;
     private boolean skipEnabled;
+    private boolean sceneBegun;
+    private boolean recordedCameraMode;
 
     SceneSession(
             Plugin plugin,
@@ -37,7 +40,8 @@ public final class SceneSession {
             Player player,
             SceneRequest request,
             PlayerStateSnapshot snapshot,
-            SceneTiming timing
+            SceneTiming timing,
+            RecordedCameraBridge recordedCameraBridge
     ) {
         this.plugin = plugin;
         this.crateRuntime = crateRuntime;
@@ -46,6 +50,7 @@ public final class SceneSession {
         this.request = request;
         this.snapshot = snapshot;
         this.timing = timing;
+        this.recordedCameraBridge = recordedCameraBridge;
     }
 
     public UUID playerId() {
@@ -57,7 +62,15 @@ public final class SceneSession {
     }
 
     public boolean canSkip() {
-        return request.skipAllowed() && skipEnabled;
+        return !recordedCameraMode && request.skipAllowed() && skipEnabled;
+    }
+
+    Player player() {
+        return player;
+    }
+
+    SceneController controller() {
+        return controller;
     }
 
     PlayerStateSnapshot snapshot() {
@@ -69,15 +82,18 @@ public final class SceneSession {
     }
 
     void start() {
-        crateRuntime.setPlacementVisible(player, request.placement().placementId(), false);
-        crateModel = RuntimeModelHandle.spawnPrivate(
-                request.placement().crateLocation(),
-                request.placement().crateModel(),
-                player
-        );
-        if (!crateModel.playAnimation(request.openAnimation(), false)) {
-            throw new IllegalArgumentException("Missing crate animation: " + request.openAnimation());
+        if (request.serverToursRoute() != null) {
+            recordedCameraMode = true;
+            if (recordedCameraBridge == null) {
+                throw new SceneAbortedException(
+                        SceneAbortReason.CAMERA_FAILURE,
+                        new IllegalStateException("ServerTours is unavailable")
+                );
+            }
+            recordedCameraBridge.start(this, request.serverToursRoute());
+            return;
         }
+        beginScene();
 
         camera = request.placement().cameraLocation().getWorld().spawn(
                 request.placement().cameraLocation(),
@@ -121,6 +137,29 @@ public final class SceneSession {
         );
     }
 
+    void beginRecordedScene() {
+        if (!recordedCameraMode) {
+            throw new IllegalStateException("Recorded scene event used by a legacy camera session");
+        }
+        beginScene();
+    }
+
+    private void beginScene() {
+        if (closed || sceneBegun) {
+            return;
+        }
+        sceneBegun = true;
+        crateRuntime.setPlacementVisible(player, request.placement().placementId(), false);
+        crateModel = RuntimeModelHandle.spawnPrivate(
+                request.placement().crateLocation(),
+                request.placement().crateModel(),
+                player
+        );
+        if (!crateModel.playAnimation(request.openAnimation(), false)) {
+            throw new IllegalArgumentException("Missing crate animation: " + request.openAnimation());
+        }
+    }
+
     void reveal() {
         if (closed || revealed) {
             return;
@@ -147,11 +186,13 @@ public final class SceneSession {
         }
 
         // Both one-draw and seven-draw reveal in this single tick; seven-draw maps loot1..loot7.
-        finishTask = plugin.getServer().getScheduler().runTaskLater(
-                plugin,
-                () -> controller.complete(player.getUniqueId()),
-                timing.resultDisplayTicks()
-        );
+        if (!recordedCameraMode) {
+            finishTask = plugin.getServer().getScheduler().runTaskLater(
+                    plugin,
+                    () -> controller.complete(player.getUniqueId()),
+                    timing.resultDisplayTicks()
+            );
+        }
     }
 
     void closeResources() {
@@ -159,6 +200,9 @@ public final class SceneSession {
             return;
         }
         closed = true;
+        if (recordedCameraMode && recordedCameraBridge != null) {
+            safely(() -> recordedCameraBridge.stop(this), "ServerTours camera");
+        }
         if (revealTask != null) {
             safely(revealTask::cancel, "reveal task");
         }

@@ -410,16 +410,19 @@ public final class RookieCratesDao {
         checkThread();
         Objects.requireNonNull(profile, "profile");
         try (PreparedStatement statement = connection.prepareStatement("""
-                INSERT INTO scene_profiles(id, name, crate_model, loot_model) VALUES (?, ?, ?, ?)
+                INSERT INTO scene_profiles(id, name, crate_model, loot_model, server_tours_route)
+                VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name,
                     crate_model = excluded.crate_model,
-                    loot_model = excluded.loot_model
+                    loot_model = excluded.loot_model,
+                    server_tours_route = excluded.server_tours_route
                 """)) {
             statement.setString(1, profile.id());
             statement.setString(2, profile.name());
             statement.setString(3, profile.crateModel());
             statement.setString(4, profile.lootModel());
+            setNullableString(statement, 5, profile.serverToursRoute());
             statement.executeUpdate();
         }
     }
@@ -1433,7 +1436,8 @@ public final class RookieCratesDao {
                 result.getString("id"),
                 result.getString("name"),
                 result.getString("crate_model"),
-                result.getString("loot_model")
+                result.getString("loot_model"),
+                result.getString("server_tours_route")
         );
     }
 

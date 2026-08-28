@@ -5,5 +5,6 @@ public enum SceneAbortReason {
     KICK,
     DEATH,
     DISABLE,
+    CAMERA_FAILURE,
     INTERNAL_ERROR
 }

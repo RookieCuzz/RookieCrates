@@ -98,6 +98,21 @@ class SQLiteDatabaseTest {
     }
 
     @Test
+    void sceneProfileRecordedRouteRoundTripsAndClears() {
+        database.run(dao -> dao.upsertSceneProfile(new SceneProfile(
+                "recorded", "Recorded", "default_crate", "loot_white", "crate_intro"
+        ))).join();
+        assertEquals("crate_intro", database.submit(dao ->
+                dao.findSceneProfile("recorded").orElseThrow().serverToursRoute()).join());
+
+        database.run(dao -> dao.upsertSceneProfile(new SceneProfile(
+                "recorded", "Recorded", "default_crate", "loot_white", null
+        ))).join();
+        assertEquals(null, database.submit(dao ->
+                dao.findSceneProfile("recorded").orElseThrow().serverToursRoute()).join());
+    }
+
+    @Test
     void foreignKeysAndTransactionsPreventPartialConfiguration() {
         CompletionException foreignKeyFailure = assertThrows(CompletionException.class, () ->
                 database.run(dao -> dao.upsertReward(new RewardDefinition(
@@ -509,7 +524,9 @@ class SQLiteDatabaseTest {
     }
 
     private static void seedCrate(RookieCratesDao dao) throws SQLException {
-        dao.upsertSceneProfile(new SceneProfile("default", "Default", "default_crate", "loot_white"));
+        dao.upsertSceneProfile(new SceneProfile(
+                "default", "Default", "default_crate", "loot_white", null
+        ));
         dao.upsertCrate(new CrateDefinition(
                 "basic", "Basic", true, new byte[]{1}, 100, 600,
                 10, 80, "default", Rarity.S, true,

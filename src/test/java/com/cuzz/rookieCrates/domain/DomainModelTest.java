@@ -69,4 +69,14 @@ class DomainModelTest {
                 "default", 8, ScenePointKind.LOOT, "world", 0, 0, 0, 0, 0
         ));
     }
+
+    @Test
+    void sceneProfileNormalizesOptionalRecordedRoute() {
+        assertEquals("crate_intro", new SceneProfile(
+                "scene", "Scene", "crate", "loot", "  crate_intro  "
+        ).serverToursRoute());
+        assertNull(new SceneProfile(
+                "scene", "Scene", "crate", "loot", "   "
+        ).serverToursRoute());
+    }
 }
